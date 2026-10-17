@@ -1,0 +1,135 @@
+/* ───────── Evidence as a story ─────────
+   One long column, five chapters, each with its own drawing. Same instrument
+   language as the terminal: sharp hairlines, pixel numerals, mono caps for labels,
+   orange only for the coins themselves. Chapters rise in as they scroll into view. */
+.st { --frame-w: 1080px; min-height: 100dvh; background-color: var(--void); }
+.st-frame { max-width: var(--frame-w); margin: 0 auto; padding-inline: var(--gutter); }
+.st-top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--void) 86%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.st-top-in { display: flex; align-items: center; gap: 12px 24px; padding-block: 12px; }
+.st-top .brand { margin-right: auto; color: var(--fg); }
+.st-back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); text-decoration: none; }
+.st-back svg { width: 14px; height: 14px; }
+.st-back:hover { color: var(--fg); }
+.st .banner { margin-top: 24px; }
+
+/* Opening */
+.st-hero { min-height: calc(100dvh - 66px); display: flex; flex-direction: column; justify-content: center; padding-block: 48px; }
+.st-kicker, .st-idx { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); margin: 0; }
+.st-hero h1 { font-size: clamp(36px, 6vw, 78px); line-height: 1.02; letter-spacing: -0.045em; font-weight: 500; margin: 20px 0 0; max-width: 20ch; text-wrap: balance; }
+.st-hero h1 .num { font-family: var(--font-pixel); font-weight: 400; letter-spacing: 0; color: var(--accent-ink); text-shadow: 0 0 28px var(--signal-glow); }
+.st-hero h1 .dim { color: var(--fg-3); }
+.st-span { margin-top: 48px; max-width: 760px; }
+.st-span-bar { position: relative; height: 18px; border: 1px solid var(--line-2); background: var(--hatch); }
+.st-span-bar i { position: absolute; top: 3px; bottom: 3px; right: 3px; background: var(--accent); box-shadow: 0 0 16px var(--signal-glow); transform-origin: right; animation: st-grow 1400ms var(--ease-out) both 200ms; }
+@keyframes st-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.st-span-ends { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; color: var(--fg); }
+.st-span-ends em { display: block; font-style: normal; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); margin-top: 2px; }
+.st-span-ends span:last-child { text-align: right; }
+.st-scroll { margin: 56px 0 0; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-4); }
+.st-scroll::after { content: ""; display: block; width: 1px; height: 40px; margin-top: 10px; background: linear-gradient(var(--fg-3), transparent); }
+
+/* Chapters */
+.st-ch { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 32px 56px; align-items: center; padding-block: 88px; border-top: 1px solid var(--line); }
+.st-ch--wide { grid-template-columns: minmax(0, 1fr); }
+.st-ch-text { max-width: 640px; }
+.st-ch h2 { font-size: clamp(26px, 3.4vw, 40px); line-height: 1.1; letter-spacing: -0.03em; font-weight: 500; margin: 14px 0 18px; text-wrap: balance; }
+.st-ch p { color: var(--fg-2); font-size: 17px; line-height: 1.65; margin: 0 0 14px; }
+.st-ch p b { color: var(--fg); font-weight: 500; }
+
+/* Scroll reveal where supported; content is fully visible otherwise. */
+@supports (animation-timeline: view()) {
+  .st-ch > * { animation: st-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 40%; }
+}
+@keyframes st-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+
+.st-cap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 10px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--fg-3); }
+.st-cap--center { justify-content: center; gap: 18px; }
+
+/* 01: the block */
+.st-block { margin: 0; padding: 28px; border: 1px solid var(--line-2); background-color: var(--ink-2); background-image: var(--dots); background-size: 12px 12px; }
+.st-block svg { display: block; width: 100%; max-width: 300px; margin: 0 auto; }
+.st-cube-front { fill: var(--ink-2); stroke: var(--fg-2); stroke-width: 1.2; }
+.st-cube-top { fill: var(--line); stroke: var(--fg-3); stroke-width: 1; }
+.st-cube-side { fill: var(--line-2); stroke: var(--fg-3); stroke-width: 1; }
+.st-coin { fill: var(--accent); filter: drop-shadow(0 0 8px var(--accent)); }
+.st-cube-fill { fill: var(--line-2); }
+.st-tx-sq { fill: var(--fg-3); }
+.st-tx-sq--coin { fill: var(--accent); filter: drop-shadow(0 0 5px var(--accent)); }
+.st-lock-tag rect { fill: var(--void); stroke: var(--fg-3); stroke-width: 0.8; }
+.st-lock-tag text { font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.08em; fill: var(--fg); }
+
+/* 02: the sleep field */
+.st-field { margin: 0; padding: 24px; border: 1px solid var(--line-2); background: var(--ink-2); }
+.st-field svg { display: block; width: 100%; height: auto; }
+.st-sq { fill: var(--fg-4); opacity: 0.55; }
+.st-sq--hot { fill: var(--accent); opacity: 1; filter: drop-shadow(0 0 5px var(--accent)); }
+/* The grid fills in top to bottom as it scrolls into view, as one piece. */
+@supports (animation-timeline: view()) {
+  .st-field svg { animation: st-fill linear both; animation-timeline: view(); animation-range: entry 15% cover 50%; }
+}
+@keyframes st-fill { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+.st-halvings { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 6px; font-size: 13.5px; color: var(--fg-2); }
+.st-halvings i { display: inline-block; width: 8px; height: 8px; margin-right: 8px; background: var(--accent); box-shadow: 0 0 8px var(--signal-glow); }
+.st-readouts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; border: 1px solid var(--line-2); border-top: 0; }
+.st-readouts div { padding: 14px 18px; }
+.st-readouts div + div { border-left: 1px solid var(--line-2); }
+.st-readouts dt { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); }
+.st-readouts dd { margin: 6px 0 0; font-family: var(--font-pixel); font-size: 30px; color: var(--fg); text-shadow: 0 0 18px var(--glow-ink); }
+
+/* 03: the waking transaction */
+.st-flow { margin: 0; padding: 24px; border: 1px solid var(--line-2); background: var(--ink-2); }
+.st-flow svg { display: block; width: 100%; height: auto; max-height: 560px; }
+.st-in rect { fill: none; stroke: var(--fg-3); }
+.st-in path, .st-out path { fill: none; stroke: var(--line-3); stroke-width: 1; }
+.st-in--old rect { fill: var(--accent); stroke: var(--accent); filter: drop-shadow(0 0 4px var(--accent)); }
+.st-in--old path { stroke: var(--accent); opacity: 0.6; }
+.st-tx { fill: var(--void); stroke: var(--fg); stroke-width: 1.2; filter: drop-shadow(0 0 10px var(--glow-ink)); }
+.st-tx-l { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.1em; fill: var(--fg); }
+.st-out rect { fill: var(--fg-2); }
+@supports (animation-timeline: view()) {
+  .st-in path, .st-out path { stroke-dasharray: 400; animation: st-draw linear both; animation-timeline: view(); animation-range: entry 20% cover 50%; }
+}
+@keyframes st-draw { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
+
+/* 04: meaning */
+.st-guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line-2); }
+.st-g { padding: 20px 22px; }
+.st-g + .st-g { border-left: 1px solid var(--line-2); }
+.st-g h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg); }
+.st-g h3 svg { width: 15px; height: 15px; }
+.st-g ul { margin: 0; padding-left: 1.1em; color: var(--fg-2); font-size: 14.5px; line-height: 1.55; }
+.st-g li + li { margin-top: 6px; }
+.st-g--not h3 { color: var(--bad); }
+
+/* 05: verify */
+.st-verify { display: flex; gap: 10px; flex-wrap: wrap; }
+.st-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 46px; padding: 0 18px; border: 1px solid var(--line-3); color: var(--fg); font-size: 14px; text-decoration: none; transition: background-color 120ms ease, border-color 120ms ease, transform 120ms var(--ease-out); }
+.st-btn svg { width: 15px; height: 15px; }
+.st-btn:active { transform: scale(0.97); }
+.st-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); box-shadow: 0 0 22px var(--signal-glow); }
+@media (hover: hover) and (pointer: fine) {
+  .st-btn:hover { background: var(--line); }
+  .st-btn--primary:hover { background: var(--accent-ink); border-color: var(--accent-ink); }
+}
+.st .share { margin-top: 18px; }
+/* One orange action per screen: sharing stays quiet next to Verify. */
+.st .share .btn--primary { background: transparent; border-color: var(--line-3); color: var(--fg); font-weight: 400; }
+.st-details { margin-top: 32px; border-top: 1px solid var(--line-2); }
+.st-details summary { cursor: pointer; padding: 16px 0; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); }
+.st-details summary:hover { color: var(--fg); }
+.st-details .inputs-wrap { margin-top: 24px; }
+
+body:has(.st) footer.foot { margin-top: 0; }
+
+@media (max-width: 860px) {
+  .st-ch { grid-template-columns: minmax(0, 1fr); padding-block: 64px; }
+  .st-guide { grid-template-columns: minmax(0, 1fr); }
+  .st-g + .st-g { border-left: 0; border-top: 1px solid var(--line-2); }
+  .st-readouts dd { font-size: 22px; }
+  .st-readouts div { padding: 12px; }
+  .st-ch p { font-size: 16px; }
+  .st-verify .st-btn { flex: 1 1 100%; justify-content: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .st-span-bar i { animation: none; }
+}

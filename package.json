@@ -6,21 +6,36 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db": "pglite-server --db=\"${GHOSTWATCH_DATA:-$HOME/.ghostwatch}/pglite\" --port=5433 --max-connections=10",
+    "worker": "tsx worker/main.ts",
+    "backfill": "tsx worker/backfill.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "simulate:reorg": "tsx scripts/simulate-reorg.ts"
   },
   "dependencies": {
+    "@mingcute/react": "^3.0.2",
+    "geist": "^1.8.1",
     "next": "16.4.0",
+    "pg": "^8.23.1",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
+    "@electric-sql/pglite-socket": "^0.2.12",
     "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^18.0.7",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.23.15",
+    "typescript": "^5",
+    "vitest": "^5.0.4"
   }
 }

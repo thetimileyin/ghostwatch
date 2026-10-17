@@ -1,69 +1,103 @@
-import Image from "next/image";
+import Link from "next/link";
+import { connection } from "next/server";
+import { Suspense } from "react";
+import { LandingLive } from "@/components/console/landing-stream";
+import { ArrowRightIcon } from "@/components/icons";
+import { MobileMenu } from "@/components/mobile-menu";
+import { NextCards } from "@/components/next-cards";
+import { ThemeSwitch } from "@/components/theme-switch";
+import { Wordmark } from "@/components/wordmark";
+import "./landing.css";
+
+// Landing: one screen into the terminal, then what's coming next.
+
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <div className="lx">
+        <header className="lx-top">
+          <div className="lx-frame lx-top-in">
+            <Link className="brand" href="/" aria-label="GhostWatch home">
+              <Wordmark />
+              <span className="wordmark">
+                Ghost<span>Watch</span>
+              </span>
+            </Link>
+            <nav className="lx-nav" aria-label="Main">
+              <Link href="/terminal">Terminal</Link>
+              <Link href="/feed">Ghost feed</Link>
+              <Link href="/archive">Archive</Link>
+              <Link href="/about">How it works</Link>
+            </nav>
+            <ThemeSwitch className="lx-theme" />
+            <Link href="/terminal" className="lx-btn lx-btn--primary lx-btn--sm lx-top-cta">
+              Open terminal <ArrowRightIcon aria-hidden />
+            </Link>
+            <MobileMenu>
+              <nav className="mm-links" aria-label="Main">
+                <Link href="/terminal">Terminal <ArrowRightIcon aria-hidden /></Link>
+                <Link href="/feed">Ghost feed <ArrowRightIcon aria-hidden /></Link>
+                <Link href="/archive">Archive <ArrowRightIcon aria-hidden /></Link>
+                <Link href="/about">How it works <ArrowRightIcon aria-hidden /></Link>
+              </nav>
+              <div className="mm-row">
+                <Link href="/terminal" className="lx-btn lx-btn--primary lx-btn--block">
+                  Open terminal <ArrowRightIcon aria-hidden />
+                </Link>
+              </div>
+            </MobileMenu>
+          </div>
+        </header>
+
+        <main id="main" className="lx-frame lx-main">
+          <Suspense fallback={<div className="lx-scene" aria-hidden="true" />}>
+            <Live>
+              <LandingLive />
+            </Live>
+          </Suspense>
+
+          <section className="lx-hero" aria-labelledby="lx-h">
+            <div className="lx-kicker">[ Live Bitcoin intelligence ]</div>
+            <h1 id="lx-h">
+              <span className="lx-line">Watch Bitcoin move</span>
+              <br />
+              <span className="dim">in real time.</span>
+            </h1>
+            <p className="lx-lede">
+              Blocks, big transfers and coins waking up after years, in one live terminal. Plain words by default, the raw numbers when you want them.
+            </p>
+            <div className="lx-ctas">
+              <Link href="/terminal" className="lx-btn lx-btn--primary">
+                Open the terminal <ArrowRightIcon aria-hidden />
+              </Link>
+              <Link href="/about" className="lx-btn">
+                How it works
+              </Link>
+            </div>
+            <p className="lx-note">No accounts. No wallet. Public Bitcoin data only.</p>
+          </section>
+        </main>
+      </div>
+
+      <section className="lx-frame lx-next" aria-labelledby="next-h">
+        <div className="section-label">
+          <div className="idx">
+            [ <em>Next</em> ] · Coming soon
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        <h2 id="next-h" className="h-section">
+          The terminal is live.
+          <br />
+          <span className="dim">Here&apos;s what comes next.</span>
+        </h2>
+        <NextCards />
+      </section>
+    </>
   );
+}
+
+async function Live({ children }: { children: React.ReactNode }) {
+  await connection();
+  return children;
 }
