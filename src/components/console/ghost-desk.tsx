@@ -10,7 +10,7 @@ import { ageClause, signalGuide, summary } from "@/lib/domain/signal";
 import type { FeedPayload, FeedStats, GhostEvent } from "@/lib/domain/types";
 import { btc, short } from "@/lib/pulse/format";
 import { usePulse, useNow } from "@/lib/pulse/use-pulse";
-import { ViewCtx, useView, useViewPreference } from "../lab/view";
+import { ViewCtx, useView, useViewPreference } from "./view";
 import { ChainBar } from "./chain-bar";
 import { Panel, useLanded } from "./console";
 

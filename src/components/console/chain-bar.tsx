@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usd } from "@/lib/pulse/format";
 import type { Pulse, PulseBlock } from "@/lib/pulse/types";
-import type { View } from "../lab/view";
+import type { View } from "./view";
 import { ArrowRightIcon, CaretDownIcon, CaretUpIcon, GhostIcon } from "../icons";
 import { MobileMenu } from "../mobile-menu";
 import { ThemeSwitch } from "../theme-switch";

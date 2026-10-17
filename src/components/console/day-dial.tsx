@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { btc, satvb, sinceShort, usd, vmb } from "@/lib/pulse/format";
+import { btc, satvb, sinceShort } from "@/lib/pulse/format";
 import type { PulseBlock } from "@/lib/pulse/types";
-import { usePulse, useNow } from "@/lib/pulse/use-pulse";
-import { EventLog } from "./event-log";
-import { LabShell, useView } from "./shell";
+import type { usePulse } from "@/lib/pulse/use-pulse";
+import { useView } from "./view";
 
+// Terminal "Last 24 hours" view: every block of the past day around a clock face.
 const DAY = 86400;
-const TYPICAL_VB = 140; // a simple one-input, two-output payment
 
 function feeColor(median: number): string {
   // dim ice for cheap blocks, signal cyan in the middle, amber when fees spike
@@ -16,36 +14,6 @@ function feeColor(median: number): string {
   if (median >= 5) return "var(--fg)";
   if (median >= 2) return "var(--fg-3)";
   return "var(--fg-4)";
-}
-
-export function ObservatoryConcept() {
-  const { pulse, events } = usePulse();
-  const [day, setDay] = useState<PulseBlock[]>([]);
-  const tipHeight = pulse?.blocks[0]?.height;
-  useEffect(() => {
-    let alive = true;
-    let retry: ReturnType<typeof setTimeout>;
-    const load = () =>
-      fetch("/api/blocks")
-        .then((r) => (r.ok ? r.json() : []))
-        .then((d: PulseBlock[]) => {
-          if (!alive) return;
-          if (d.length) setDay(d);
-          else retry = setTimeout(load, 4000); // history still warming up
-        })
-        .catch(() => alive && (retry = setTimeout(load, 4000)));
-    load();
-    return () => {
-      alive = false;
-      clearTimeout(retry);
-    };
-  }, [tipHeight]);
-
-  return (
-    <LabShell concept="observatory" price={pulse?.priceUsd ?? null}>
-      <ObservatoryStage pulse={pulse} events={events} day={day} />
-    </LabShell>
-  );
 }
 
 /** The 24-hour block dial: reused by the terminal's Dial tab. */
@@ -139,61 +107,5 @@ export function Dial({ pulse, day, now }: { pulse: ReturnType<typeof usePulse>["
           <span>inner arc: time since last block (10 min average)</span>
         </div>
       </section>
-  );
-}
-
-function ObservatoryStage({ pulse, events, day }: { pulse: ReturnType<typeof usePulse>["pulse"]; events: ReturnType<typeof usePulse>["events"]; day: PulseBlock[] }) {
-  const view = useView();
-  const now = useNow();
-  const nowS = now / 1000;
-  const inDay = useMemo(() => day.filter((b) => nowS - b.time <= DAY), [day, nowS]);
-  const fees24 = inDay.reduce((s, b) => s + b.totalFees, 0);
-  const tx24 = inDay.reduce((s, b) => s + b.txCount, 0);
-  const typicalFeeUsd = pulse?.fees && pulse.priceUsd ? ((pulse.fees.fastest * TYPICAL_VB) / 1e8) * pulse.priceUsd : null;
-
-  return (
-    <main className="obs" id="main">
-      <section className="obs-left" aria-label="Instruments">
-        <div className="idx">[ <em>01</em> ] · Instruments</div>
-        <div className="obs-read">
-          <div className="obs-big num">{usd(pulse?.priceUsd ?? null)}</div>
-          <div className="obs-l">Bitcoin price</div>
-        </div>
-        {view === "simple" ? (
-          <>
-            <div className="obs-read">
-              <div className="obs-big num">{pulse?.mempool ? pulse.mempool.count.toLocaleString("en-US") : "—"}</div>
-              <div className="obs-l">Transactions waiting to be confirmed</div>
-            </div>
-            <div className="obs-read">
-              <div className="obs-big num">{typicalFeeUsd != null ? usd(typicalFeeUsd, 2) : "—"}</div>
-              <div className="obs-l">To send a typical payment in the next block</div>
-            </div>
-            <p className="obs-note">
-              Bitcoin adds a block of transactions about every 10 minutes. The dial shows every block from the last 24 hours. Longer marks held
-              more transactions; brighter marks paid higher fees.
-            </p>
-          </>
-        ) : (
-          <dl className="obs-tech">
-            <div><dt>Mempool</dt><dd>{pulse?.mempool ? `${pulse.mempool.count.toLocaleString("en-US")} tx · ${vmb(pulse.mempool.vsize)}` : "—"}</dd></div>
-            <div><dt>Next block</dt><dd>{pulse?.fees ? satvb(pulse.fees.fastest) : "—"}</dd></div>
-            <div><dt>30 min</dt><dd>{pulse?.fees ? satvb(pulse.fees.halfHour) : "—"}</dd></div>
-            <div><dt>1 hour</dt><dd>{pulse?.fees ? satvb(pulse.fees.hour) : "—"}</dd></div>
-            <div><dt>Minimum</dt><dd>{pulse?.fees ? satvb(pulse.fees.minimum) : "—"}</dd></div>
-            <div><dt>24h blocks</dt><dd>{inDay.length} · {(inDay.length ? 86400 / inDay.length / 60 : 0).toFixed(1)} min avg</dd></div>
-            <div><dt>24h tx</dt><dd>{tx24.toLocaleString("en-US")}</dd></div>
-            <div><dt>24h fees</dt><dd>{btc(fees24)}</dd></div>
-          </dl>
-        )}
-      </section>
-
-      <Dial pulse={pulse} day={day} now={now} />
-
-      <aside className="obs-right" aria-label="What just happened">
-        <div className="idx">[ <em>02</em> ] · Log</div>
-        <EventLog events={events} now={now} price={pulse?.priceUsd ?? null} limit={16} />
-      </aside>
-    </main>
   );
 }

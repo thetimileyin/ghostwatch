@@ -1,0 +1,58 @@
+/* ───────── How it works ─────────
+   Reading page in the instrument language: [0x] indices, hairline rules, one
+   process strip, generous type. */
+.ab { min-height: 100dvh; background-color: var(--void); }
+.ab-idx { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); margin: 0; }
+.ab-hero { padding-block: 96px 72px; }
+.ab-hero h1 { font-size: clamp(36px, 5.4vw, 68px); line-height: 1.02; letter-spacing: -0.045em; font-weight: 500; margin: 18px 0 0; text-wrap: balance; }
+.ab-hero h1 .dim { color: var(--fg-3); }
+.ab-lede { max-width: 60ch; margin: 28px 0 0; font-size: 18px; line-height: 1.6; color: var(--fg-2); }
+.ab-lede b, .ab-sec b { color: var(--fg); font-weight: 500; }
+
+.ab-sec { padding-block: 56px; border-top: 1px solid var(--line); }
+.ab-sec h2 { font-size: clamp(24px, 3vw, 34px); line-height: 1.12; letter-spacing: -0.03em; font-weight: 500; margin: 12px 0 24px; }
+.ab-sec--text { display: grid; grid-template-columns: 70px minmax(0, 300px) minmax(0, 1fr); gap: 8px 32px; align-items: start; }
+.ab-sec--text h2 { margin: 0; font-size: 22px; letter-spacing: -0.02em; }
+.ab-sec--text .ab-idx { padding-top: 6px; }
+.ab-sec p { margin: 0 0 14px; font-size: 16.5px; line-height: 1.65; color: var(--fg-2); max-width: 62ch; }
+
+/* The process, as one instrument strip */
+.ab-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line-2); background-color: var(--ink-2); background-image: radial-gradient(120% 70% at 50% 0%, var(--sheen), transparent 65%); }
+.ab-steps li { display: flex; flex-direction: column; gap: 8px; padding: 20px 20px 22px; position: relative; }
+.ab-steps li + li { border-left: 1px solid var(--line-2); }
+.ab-steps li:last-child { box-shadow: inset 0 3px 0 var(--accent); }
+.ab-step-k { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); }
+.ab-steps li:last-child .ab-step-k { color: var(--accent-ink); }
+.ab-steps b { font-size: 17px; font-weight: 500; color: var(--fg); letter-spacing: -0.01em; }
+.ab-steps span:last-child { font-size: 14px; line-height: 1.55; color: var(--fg-2); }
+.ab-cohorts { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; margin-top: 16px; font-size: 13.5px; color: var(--fg-2); }
+.ab-cohorts span { display: inline-flex; align-items: center; gap: 8px; }
+.ab-cohorts i { width: 8px; height: 8px; display: inline-block; }
+.ab-cohorts .c5 { background: var(--age-5); }
+.ab-cohorts .c10 { background: var(--age-10); }
+.ab-cohorts .c15 { background: var(--age-15); }
+.ab-cohorts em { font-style: normal; color: var(--fg-3); }
+
+/* On-this-page index */
+.ab-toc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.ab-toc a { padding: 14px 0; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-2); text-decoration: none; }
+.ab-toc a:hover { color: var(--fg); }
+.ab-sec { scroll-margin-top: 72px; }
+
+.ab-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 6px; padding: 0 18px; border: 1px solid var(--line-3); color: var(--fg); font-size: 14px; text-decoration: none; transition: background-color 120ms ease, transform 120ms var(--ease-out); }
+.ab-btn svg { width: 15px; height: 15px; }
+.ab-btn:active { transform: scale(0.97); }
+@media (hover: hover) and (pointer: fine) { .ab-btn:hover { background: var(--line); } }
+
+@media (max-width: 860px) {
+  .ab-hero { padding-block: 56px 48px; }
+  .ab-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ab-steps li:nth-child(3) { border-left: 0; }
+  .ab-steps li:nth-child(n + 3) { border-top: 1px solid var(--line-2); }
+  .ab-sec--text { grid-template-columns: minmax(0, 1fr); }
+  .ab-toc { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .ab-steps { grid-template-columns: minmax(0, 1fr); }
+  .ab-steps li + li { border-left: 0; border-top: 1px solid var(--line-2); }
+}

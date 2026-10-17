@@ -3,13 +3,6 @@
    language as the terminal: sharp hairlines, pixel numerals, mono caps for labels,
    orange only for the coins themselves. Chapters rise in as they scroll into view. */
 .st { --frame-w: 1080px; min-height: 100dvh; background-color: var(--void); }
-.st-frame { max-width: var(--frame-w); margin: 0 auto; padding-inline: var(--gutter); }
-.st-top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--void) 86%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
-.st-top-in { display: flex; align-items: center; gap: 12px 24px; padding-block: 12px; }
-.st-top .brand { margin-right: auto; color: var(--fg); }
-.st-back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); text-decoration: none; }
-.st-back svg { width: 14px; height: 14px; }
-.st-back:hover { color: var(--fg); }
 .st .banner { margin-top: 24px; }
 
 /* Opening */

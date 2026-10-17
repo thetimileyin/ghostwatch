@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { CopyButton, ShareBar } from "@/components/copy";
 import { axisPct } from "@/components/event-bits";
-import { ArrowLeftIcon, CheckIcon, ExternalLinkIcon, InfoIcon, WarningIcon } from "@/components/icons";
+import { CheckIcon, ExternalLinkIcon, InfoIcon, WarningIcon } from "@/components/icons";
 import { BlockGlyph, SleepField, WakeFlow, halvingsBetween, subsidyAt } from "@/components/story/visuals";
-import { ThemeSwitch } from "@/components/theme-switch";
-import { Wordmark } from "@/components/wordmark";
+import { PageHeader } from "@/components/page-header";
 import { getEvent, getStatus } from "@/lib/db/read";
 import {
   btcShort, dateShort, dateTimeUtc, durationLong, durationShort, heightLabel, isoDate, middleTruncate, monthYear, satsLabel, satsToBtcString,
@@ -89,18 +87,9 @@ async function EventContent({ params }: { params: Params }) {
 
   return (
     <div className="st">
-      <header className="st-top">
-        <div className="st-frame st-top-in">
-          <Link href="/" className="brand" aria-label="GhostWatch home">
-            <Wordmark />
-            <span className="wordmark">Ghost<span>Watch</span></span>
-          </Link>
-          <Link href={back.href} className="st-back"><ArrowLeftIcon aria-hidden /> {back.label}</Link>
-          <ThemeSwitch />
-        </div>
-      </header>
+      <PageHeader back={back} />
 
-      <main id="main" className="st-frame">
+      <main id="main" className="pg-frame">
         {reversed && (
           <div className="banner banner--bad" role="status">
             <WarningIcon aria-hidden />
