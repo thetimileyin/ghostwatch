@@ -64,7 +64,7 @@
 .cb-weather { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--fg); white-space: nowrap; }
 .cb-weather-dot { width: 7px; height: 7px; background: var(--fg); }
 .cb-weather--busy .cb-weather-dot, .cb-weather--slow .cb-weather-dot { background: var(--wait); }
-.cb-weather--hot .cb-weather-dot, .cb-weather--ghost .cb-weather-dot { background: var(--accent); }
+.cb-weather--hot .cb-weather-dot { background: var(--accent); }
 .cb-price { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--fg); white-space: nowrap; }
 .cb-price em { font-style: normal; font-size: 11px; }
 .up { color: var(--fg); }
@@ -188,6 +188,12 @@
 /* Dot-matrix chart */
 .dk-note { margin: 4px 0 0; color: var(--fg-4); }
 .dc { margin: 12px 0 0; }
+.dc-read { display: flex; align-items: baseline; gap: 8px; min-height: 18px; margin-bottom: 6px; font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-3); }
+.dc-read b { font-weight: 500; font-size: 13px; color: var(--fg); }
+.dc-read b::after { content: " sat/vB"; font-size: 10px; color: var(--fg-3); }
+.dc-hit { position: relative; height: 100%; cursor: crosshair; touch-action: pan-y; }
+.dc-hit:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.dc-col { fill: var(--line); }
 .dc-plot { position: relative; height: 72px; padding-left: 30px; }
 .dc-plot svg, .dc--empty svg { display: block; width: 100%; height: 100%; }
 .dc--empty { height: 72px; background: var(--hatch); }
@@ -266,7 +272,7 @@
 .cb-height, .rw-v, .mk-v, .ci-amt, .pv-amt { text-shadow: 0 0 18px var(--glow-ink); }
 .mk-t--hot .mk-v, .ci-dl dd.hot { text-shadow: 0 0 14px var(--signal-glow); }
 .tc-b--next i, .tc-b--hot i { box-shadow: 0 0 10px var(--signal-glow); }
-.cb-weather--hot .cb-weather-dot, .cb-weather--ghost .cb-weather-dot { box-shadow: 0 0 8px var(--accent), 0 0 16px var(--signal-glow); }
+.cb-weather--hot .cb-weather-dot { box-shadow: 0 0 8px var(--accent), 0 0 16px var(--signal-glow); }
 .cb-alert.is-on { box-shadow: 0 0 16px var(--signal-glow); }
 .pn-h--ghost .pn-title::before { box-shadow: 0 0 8px var(--accent); }
 .ci-seg { box-shadow: 0 0 12px var(--signal-glow); }
@@ -293,17 +299,16 @@
   .ss-i a:hover, .gl-i:hover, .tk-i a:hover { background: none; }
 }
 
-/* Field guide: a modal, so it fades and settles from the centre */
-.gw-guide { transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), overlay 200ms allow-discrete, display 200ms allow-discrete; }
-.gw-guide[open] { opacity: 1; transform: none; }
-@starting-style { .gw-guide[open] { opacity: 0; transform: scale(0.97); } }
-.gw-guide::backdrop { transition: opacity 200ms ease; }
-@starting-style { .gw-guide[open]::backdrop { opacity: 0; } }
+/* Field guide: a modal, so it fades and settles from the centre. A one-shot
+   animation always ends fully visible (the @starting-style version could stick at 0). */
+.gw-guide[open] { animation: guide-in 200ms var(--ease-out); }
+.gw-guide[open]::backdrop { animation: guide-fade 200ms ease; }
+@keyframes guide-in { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes guide-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* ───────── Responsive ───────── */
-@media (max-width: 1480px) {
-  .cb-c { order: 3; flex-basis: 100%; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--line); }
-}
+/* When the three groups don't fit one row (measured in ChainBar), the readouts take a full row of their own. */
+.cb[data-stack] .cb-c { order: 3; flex-basis: 100%; flex-wrap: wrap; row-gap: 8px; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--line); }
 @media (max-width: 1180px) {
   .gw { grid-template-columns: 250px minmax(0, 1fr); grid-template-areas: "top top" "left center" "right right"; height: auto; }
   .gw-col { overflow: visible; }

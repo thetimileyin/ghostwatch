@@ -425,7 +425,9 @@ function Pulse_({ pulse, day, now }: { pulse: Pulse | null; day: PulseBlock[]; n
   const hour = day.filter((b) => now / 1000 - b.time <= 3600).length;
   const ghosts24 = (pulse?.ghosts ?? []).filter((g) => now / 1000 - g.blockTime < 86400).length;
   const count = pulse?.mempool?.count ?? 0;
-  const fees = [...day].sort((a, b) => a.time - b.time).map((b) => b.medianFee);
+  const sorted = [...day].sort((a, b) => a.time - b.time);
+  const fees = sorted.map((b) => b.medianFee);
+  const feeLabels = sorted.map((b) => `Block ${b.height.toLocaleString("en-US")} · ${sinceShort(b.time, now)}`);
   return (
     <Panel title="Pulse" meta="now">
       <Meter label={view === "simple" ? "Queue" : "Mempool tx"} value={count} max={300_000} text={compact(count)} />
@@ -433,7 +435,7 @@ function Pulse_({ pulse, day, now }: { pulse: Pulse | null; day: PulseBlock[]; n
       <Meter label={view === "simple" ? "Blocks this hour" : "Blocks / 1h"} value={hour} max={6} text={`${hour} of ~6`} />
       <Meter label={view === "simple" ? "Big moves seen" : "Notable tx"} value={notable} max={20} text={String(notable)} />
       <Meter label={view === "simple" ? "Old coins moved" : "Ghosts / 24h"} value={ghosts24} max={20} text={String(ghosts24)} tone="hot" />
-      <DotChart values={fees} label="Median fee per block over the last 24 hours, sat/vB" axis={["24h ago", "now"]} format={(n) => `${n.toFixed(1)}`} />
+      <DotChart values={fees} labels={feeLabels} label="Median fee per block over the last 24 hours, sat/vB" axis={["24h ago", "now"]} format={(n) => `${n.toFixed(1)}`} />
       <p className="dk-note">{view === "simple" ? "Typical fee per block, last 24 hours" : "Median fee rate per block (sat/vB), 24h"}</p>
     </Panel>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { usd } from "@/lib/pulse/format";
 import type { Pulse, PulseBlock } from "@/lib/pulse/types";
 import type { View } from "./view";
@@ -18,10 +19,9 @@ function tone(median: number) {
   return "calm";
 }
 
-/** Plain-language state of the chain, shown next to the block clock. */
-export function chainWeather(p: Pulse | null, nowMs: number): { label: string; tone: "clear" | "busy" | "hot" | "slow" | "ghost" } {
+/** Plain-language state of the network, shown next to the block clock. Waking coins have their own button. */
+export function chainWeather(p: Pulse | null, nowMs: number): { label: string; tone: "clear" | "busy" | "hot" | "slow" } {
   if (!p) return { label: "Connecting", tone: "clear" };
-  if (p.ghosts.some((g) => nowMs / 1000 - g.blockTime < 3600 && g.cohort >= 10)) return { label: "Old coins awake", tone: "ghost" };
   if ((p.fees?.fastest ?? 0) >= 20) return { label: "Expensive", tone: "hot" };
   if ((p.mempool?.count ?? 0) > 150_000) return { label: "Busy", tone: "busy" };
   const tip = p.blocks[0];
@@ -58,6 +58,39 @@ function Timechain({ blocks, nowMs, landed }: { blocks: PulseBlock[]; nowMs: num
   );
 }
 
+/**
+ * True when the bar's three groups can't sit on one row at the current width.
+ * Measures the groups' natural widths instead of guessing a breakpoint, so new
+ * readouts can never push content over the buttons.
+ */
+function useFitsOneRow() {
+  const bar = useRef<HTMLElement>(null);
+  const [stack, setStack] = useState(false);
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const measure = () => {
+      const [l, c, r] = [".cb-l", ".cb-c", ".cb-r"].map((q) => el.querySelector<HTMLElement>(q));
+      if (!l || !c || !r) return;
+      const gap = (g: HTMLElement) => parseFloat(getComputedStyle(g).columnGap) || 0;
+      const inner = (g: HTMLElement) => {
+        const kids = [...g.children].filter((k) => getComputedStyle(k).display !== "none") as HTMLElement[];
+        return kids.reduce((w, k) => w + k.offsetWidth, 0) + gap(g) * Math.max(0, kids.length - 1);
+      };
+      const cs = getComputedStyle(el);
+      const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      const need = inner(l) + inner(c) + inner(r) + gap(el) * 2;
+      setStack(need > room);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    el.querySelectorAll(".cb-c > *, .cb-r > *").forEach((k) => ro.observe(k));
+    return () => ro.disconnect();
+  });
+  return { bar, stack };
+}
+
 export function ChainBar({
   pulse,
   nowMs,
@@ -80,9 +113,10 @@ export function ChainBar({
   const change = pulse?.priceUsd && pulse.network.price24hAgo ? (pulse.priceUsd - pulse.network.price24hAgo) / pulse.network.price24hAgo : null;
   const w = chainWeather(pulse, nowMs);
   const woke = (pulse?.ghosts ?? []).filter((g) => nowMs / 1000 - g.blockTime < 86400).length;
+  const { bar, stack } = useFitsOneRow();
   const utc = new Date(nowMs).toISOString().slice(11, 19);
   return (
-    <header className="cb">
+    <header className="cb" ref={bar} data-stack={stack || undefined}>
       <div className="cb-l">
         <Link href="/" className="cb-brand" aria-label="GhostWatch home">
           <Wordmark size={20} />
