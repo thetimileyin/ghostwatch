@@ -12,7 +12,9 @@ const base = process.env.PUBLIC_BASE_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(base),
-  title: { default: "GhostWatch: live Bitcoin intelligence", template: "%s · GhostWatch" },
+  // Brand is GhostWatch; the full name "Bitcoin GhostWatch" leads where strangers first meet it.
+  title: { default: "Bitcoin GhostWatch: watch Bitcoin move in real time", template: "%s · Bitcoin GhostWatch" },
+  applicationName: "GhostWatch",
   description:
     "Watch Bitcoin move in real time: blocks, big transfers and coins waking up after years, in one live terminal.",
   openGraph: { siteName: "Bitcoin GhostWatch", type: "website" },
