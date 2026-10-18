@@ -36,14 +36,12 @@ export async function ogFonts() {
   ];
 }
 
-/** The brand mark, same drawing as the site's Wordmark component. */
+/** The brand mark, same drawing as the site's Wordmark component: pixel ghost, one orange eye. */
 export function OgMark({ size = 40 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      <circle cx="16" cy="16" r="12.5" stroke={OG.fg} strokeOpacity=".4" strokeWidth="1.5" />
-      <path d="M16 3.5a12.5 12.5 0 0 1 12.5 12.5" stroke={OG.fg} strokeWidth="1.5" />
-      <rect x="11" y="11" width="10" height="10" stroke={OG.fg} strokeWidth="1.5" />
-      <rect x="23" y="5.4" width="3.6" height="3.6" fill={OG.accent} />
+    <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
+      <path fill={OG.fg} fillRule="evenodd" d="M4 0H8V1H10V2H11V12H9V11H7V12H5V11H3V12H1V2H2V1H4Z M3 4V6H5V4Z" />
+      <rect x="7" y="4" width="2" height="2" fill={OG.accent} />
     </svg>
   );
 }

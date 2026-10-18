@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12" shape-rendering="crispEdges">
+  <style>.g{fill:#141416}@media (prefers-color-scheme:dark){.g{fill:#ecebe7}}</style>
+  <path class="g" fill-rule="evenodd" d="M4 0H8V1H10V2H11V12H9V11H7V12H5V11H3V12H1V2H2V1H4Z M3 4V6H5V4Z"/>
+  <rect x="7" y="4" width="2" height="2" fill="#f7931a"/>
+</svg>

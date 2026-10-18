@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+
+// Measure before paint in the browser (no unfitted first frame); plain effect on the server.
+const useBeforePaint = typeof window === "undefined" ? useEffect : useLayoutEffect;
 import { usd } from "@/lib/pulse/format";
 import type { Pulse, PulseBlock } from "@/lib/pulse/types";
 import type { View } from "./view";
@@ -71,13 +74,14 @@ const SHED = ["utc", "words", "chain", "guide"] as const;
  */
 function useOneLine() {
   const bar = useRef<HTMLElement>(null);
-  useEffect(() => {
+  useBeforePaint(() => {
     const el = bar.current;
     if (!el) return;
     const width = (q: string) => [...el.querySelectorAll<HTMLElement>(q)].reduce((w, n) => w + n.offsetWidth, 0);
     const measure = () => {
       // Lay out at full detail on one row, then read the sizes.
       delete el.dataset.stack;
+      delete el.dataset.fit;
       SHED.forEach((k) => delete el.dataset[k]);
       const groups = [".cb-l", ".cb-c", ".cb-r"].map((q) => el.querySelector<HTMLElement>(q));
       if (groups.some((g) => !g)) return;
@@ -105,6 +109,7 @@ function useOneLine() {
         SHED.forEach((k) => delete el.dataset[k]);
         el.dataset.stack = "";
       }
+      el.dataset.fit = "";
     };
     measure();
     const ro = new ResizeObserver(measure);
