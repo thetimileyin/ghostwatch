@@ -94,6 +94,8 @@
 .lx-blk-s { font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lx-blk--next .lx-blk-h { color: var(--fg-3); }
 .lx-chain-meta { display: flex; gap: 8px 28px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--fg-3); }
+.lx-watch { display: inline-flex; align-items: center; gap: 4px; }
+.lx-watch i { width: 6px; height: 6px; margin-right: 4px; background: var(--accent); box-shadow: 0 0 8px var(--signal-glow); }
 .lx-chain-meta b { font-family: var(--font-mono); font-weight: 400; color: var(--fg); margin-right: 4px; }
 
 /* ───────── What's next (below the fold) ───────── */

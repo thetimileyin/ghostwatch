@@ -114,6 +114,11 @@ export default function About() {
               Your browser remembers two preferences, and only on your device: Simple or Technical, and light or dark. Nothing about you is sent
               to us.
             </p>
+            <p>
+              The &ldquo;watching&rdquo; count works without tracking. Each open tab makes up a random code that lives only in its memory and
+              disappears when you close it. Our server counts the codes it has heard from in the last 15 seconds and forgets them. No cookies, and
+              the code is never tied to your IP address.
+            </p>
             <p>We describe coins, not people. We don&apos;t label addresses with names, and we don&apos;t publish lists of vulnerable coins.</p>
           </div>
         </section>

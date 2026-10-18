@@ -61,7 +61,7 @@
 .tc-b--next { margin-left: 5px; border-style: dashed; background: var(--hatch); }
 .tc-b--next i { background: var(--accent); opacity: 0.85; transition: transform 1s linear; }
 
-.cb-weather { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--fg); }
+.cb-weather { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--fg); white-space: nowrap; }
 .cb-weather-dot { width: 7px; height: 7px; background: var(--fg); }
 .cb-weather--busy .cb-weather-dot, .cb-weather--slow .cb-weather-dot { background: var(--wait); }
 .cb-weather--hot .cb-weather-dot, .cb-weather--ghost .cb-weather-dot { background: var(--accent); }
@@ -69,6 +69,11 @@
 .cb-price em { font-style: normal; font-size: 11px; }
 .up { color: var(--fg); }
 .down { color: var(--bad); }
+.cb-watch { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg-2); white-space: nowrap; }
+.cb-watch b { font-family: var(--font-mono); font-weight: 500; color: var(--fg); }
+.cb-watch i { position: relative; width: 6px; height: 6px; background: var(--accent); box-shadow: 0 0 8px var(--signal-glow); }
+.cb-watch i::after { content: ""; position: absolute; inset: -3px; border: 1px solid var(--accent); opacity: 0; animation: watch-ping 2.4s var(--ease-out) infinite; }
+@keyframes watch-ping { 0% { opacity: 0.7; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.8); } }
 .cb-utc { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); white-space: nowrap; }
 .cb-price em { display: inline-flex; align-items: center; line-height: 1; }
 .cb-price em svg { width: 14px; height: 14px; margin-right: 1px; }

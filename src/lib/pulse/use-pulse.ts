@@ -18,6 +18,12 @@ const MAX_EVENTS = 40;
  * transactions and ghost awakenings. `newTxs` is every newly sampled tx,
  * notable or not, for visualisations that show all activity.
  */
+// Random code for this tab, kept in memory only, so the server can count people watching now.
+const TAB =
+  typeof crypto !== "undefined" && "getRandomValues" in crypto
+    ? Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, "0")).join("")
+    : "";
+
 export function usePulse() {
   const [pulse, setPulse] = useState<Pulse | null>(null);
   const [events, setEvents] = useState<LiveEvent[]>([]);
@@ -31,7 +37,7 @@ export function usePulse() {
 
   const tick = useCallback(async () => {
     try {
-      const res = await fetch("/api/pulse", { cache: "no-store" });
+      const res = await fetch("/api/pulse", { cache: "no-store", headers: { "x-gw-tab": TAB } });
       if (!res.ok) throw new Error(String(res.status));
       const p = (await res.json()) as Pulse;
       const initial = first.current;
@@ -75,9 +81,13 @@ export function usePulse() {
   useEffect(() => {
     const t0 = setTimeout(tick, 0);
     const id = setInterval(() => document.visibilityState === "visible" && tick(), POLL_MS);
+    // Stop being counted as watching the moment this tab closes or navigates away.
+    const bye = () => TAB && navigator.sendBeacon?.("/api/presence", TAB);
+    window.addEventListener("pagehide", bye);
     return () => {
       clearTimeout(t0);
       clearInterval(id);
+      window.removeEventListener("pagehide", bye);
     };
   }, [tick]);
 

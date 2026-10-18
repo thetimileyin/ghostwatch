@@ -132,6 +132,11 @@ function ChainRibbon({ pulse, now }: { pulse: Pulse | null; now: number }) {
       <div className="lx-chain-meta">
         <span><b className="num">{pulse?.mempool ? pulse.mempool.count.toLocaleString("en-US") : "—"}</b> waiting</span>
         <span><b className="num">{usd(pulse?.priceUsd ?? null)}</b> per bitcoin</span>
+        {pulse?.watching != null && (
+          <span className="lx-watch" title="Tabs open on GhostWatch right now. Counted anonymously: no cookies, no IP addresses.">
+            <i aria-hidden="true" /> <b className="num">{pulse.watching.toLocaleString("en-US")}</b> watching now
+          </span>
+        )}
       </div>
     </div>
   );

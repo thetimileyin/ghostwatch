@@ -107,6 +107,12 @@ export function ChainBar({
           <span className="cb-weather-dot" aria-hidden="true" />
           {w.label}
         </span>
+        {pulse?.watching != null && (
+          <span className="cb-watch" title="Tabs open on GhostWatch right now. Counted anonymously: no cookies, no IP addresses.">
+            <i aria-hidden="true" />
+            <b className="num">{pulse.watching.toLocaleString("en-US")}</b> watching
+          </span>
+        )}
         <span className="cb-price">
           <span className="num">{usd(pulse?.priceUsd ?? null)}</span>
           {change != null && <em className={change >= 0 ? "up" : "down"}>{change >= 0 ? <CaretUpIcon aria-hidden /> : <CaretDownIcon aria-hidden />}{change >= 0 ? "+" : "−"}{Math.abs(change * 100).toFixed(2)}%</em>}

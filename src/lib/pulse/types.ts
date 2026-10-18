@@ -66,6 +66,8 @@ export interface Pulse {
   /** Rolling sample of recently broadcast transactions, newest first. */
   txs: PulseTx[];
   ghosts: PulseGhost[];
+  /** Tabs watching GhostWatch right now (anonymous count). Set by the API route. */
+  watching?: number;
 }
 
 export interface NodesSnapshot {
