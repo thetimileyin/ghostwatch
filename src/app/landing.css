@@ -80,7 +80,7 @@
 .lx-chain::before, .lx-chain::after { content: ""; position: absolute; top: 0; bottom: 0; width: 8px; border: 1px solid var(--fg-3); }
 .lx-chain::before { left: 0; border-right: 0; }
 .lx-chain::after { right: 0; border-left: 0; }
-.lx-chain-k { display: block; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 8px; }
+.lx-chain-k { display: block; text-wrap: balance; font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 8px; }
 .lx-chain ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; position: relative; }
 .lx-chain ol::before { content: ""; position: absolute; left: 0; right: 0; top: 15px; height: 1px; background: var(--line-3); }
 .lx-blk { position: relative; display: grid; gap: 3px; padding-right: 10px; min-width: 0; }
@@ -93,10 +93,12 @@
 .lx-blk-h { font-family: var(--font-mono); font-size: 12.5px; color: var(--fg); margin-top: 4px; }
 .lx-blk-s { font-size: 11px; color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lx-blk--next .lx-blk-h { color: var(--fg-3); }
+/* Readouts under the chain: one line on wide screens, three equal columns on phones. */
 .lx-chain-meta { display: flex; gap: 8px 28px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--fg-3); }
-.lx-watch { display: inline-flex; align-items: center; gap: 4px; }
-.lx-watch i { width: 6px; height: 6px; margin-right: 4px; background: var(--accent); box-shadow: 0 0 8px var(--signal-glow); }
-.lx-chain-meta b { font-family: var(--font-mono); font-weight: 400; color: var(--fg); margin-right: 4px; }
+.lx-stat { display: inline-flex; align-items: baseline; gap: 6px; min-width: 0; }
+.lx-stat b { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-weight: 400; color: var(--fg); }
+.lx-stat em { font-style: normal; }
+.lx-watch i { width: 6px; height: 6px; background: var(--accent); box-shadow: 0 0 8px var(--signal-glow); }
 
 /* ───────── What's next (below the fold) ───────── */
 .lx-next { padding-block: var(--s8) var(--s8); }
@@ -161,6 +163,14 @@
 }
 @media (max-width: 640px) {
   .lx-ctas .lx-btn { flex: 1 1 100%; justify-content: center; min-height: 48px; }
+}
+@media (max-width: 640px) {
+  .lx-chain-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 14px; border-top: 1px solid var(--line); }
+  .lx-stat { flex-direction: column; align-items: flex-start; gap: 3px; padding: 10px 0 0 10px; }
+  .lx-stat:first-child { padding-left: 0; }
+  .lx-stat + .lx-stat { border-left: 1px solid var(--line); }
+  .lx-stat b { font-size: 15px; }
+  .lx-stat em { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
 }
 @media (max-width: 520px) {
   .lx-seal { width: 128px; height: 128px; top: 38%; }
