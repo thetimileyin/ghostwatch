@@ -75,27 +75,8 @@ export function GhostDesk({ mode }: { mode: Mode }) {
                 : "Real awakenings from before GhostWatch went live, found by running the same detector over past blocks."}
             </p>
           </Panel>
-          <Panel title="Filter">
-            <div className="gwx-filter" role="group" aria-label="Minimum age">
-              <span className="gwx-flabel">Unspent for</span>
-              <div className="gw-tablist">
-                {AGE_OPTIONS.map((o) => (
-                  <button key={o.value} type="button" aria-pressed={q.age === o.value} onClick={() => setQ({ ...q, age: o.value })}>
-                    {o.value === 5 ? "5y+" : o.label.replace("Y+", "y+")}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="gwx-filter" role="group" aria-label="Minimum amount">
-              <span className="gwx-flabel">Amount</span>
-              <div className="gw-tablist">
-                {MIN_OPTIONS.map((o) => (
-                  <button key={o.value} type="button" aria-pressed={q.min === o.value} onClick={() => setQ({ ...q, min: o.value })}>
-                    {o.value === 0 ? "Any" : o.label.replace(" BTC", "")}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <Panel title="Filter" className="gwx-filters-side">
+            <Filters q={q} setQ={setQ} />
           </Panel>
           <Panel title="In view" meta={events ? `${events.length} events` : "…"}>
             <div className="rw"><span className="rw-dot" aria-hidden="true" /><span className="rw-l">Largest<em>{largest ? `from ${monthYear(largest.oldestCreatedTime)}` : ""}</em></span><span className="rw-v num">{largest ? btc(largest.dormantSats) : "—"}</span></div>
@@ -114,6 +95,10 @@ export function GhostDesk({ mode }: { mode: Mode }) {
 
         <main className="gw-col gwx-center" id="main">
           <Panel title={mode === "feed" ? "Latest first" : "Largest first"} meta={failed ? "can't load right now" : events ? `${events.length} shown` : "loading"} className="gwx-list">
+            {/* Phones: the filters sit above the list instead of below it. */}
+            <div className="gwx-filters-top">
+              <Filters q={q} setQ={setQ} compact />
+            </div>
             {events && events.length === 0 && <p className="pn-empty">Nothing matches this filter.</p>}
             <ol className="gl">
               {(events ?? []).map((e) => {
@@ -143,6 +128,34 @@ export function GhostDesk({ mode }: { mode: Mode }) {
         {sheet && selected && <PreviewSheet e={selected} now={now} onClose={() => setSheet(false)} />}
       </div>
     </ViewCtx.Provider>
+  );
+}
+
+/** Age and amount filters. Compact: one row of two button groups, for the top of the list on phones. */
+function Filters({ q, setQ, compact = false }: { q: FeedQuery; setQ: (q: FeedQuery) => void; compact?: boolean }) {
+  return (
+    <div className={compact ? "gwx-fc" : undefined}>
+      <div className="gwx-filter" role="group" aria-label="Minimum age">
+        {!compact && <span className="gwx-flabel">Unspent for</span>}
+        <div className="gw-tablist">
+          {AGE_OPTIONS.map((o) => (
+            <button key={o.value} type="button" aria-pressed={q.age === o.value} onClick={() => setQ({ ...q, age: o.value })}>
+              {o.value === 5 ? "5y+" : o.label.replace("Y+", "y+")}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="gwx-filter" role="group" aria-label="Minimum amount">
+        {!compact && <span className="gwx-flabel">Amount</span>}
+        <div className="gw-tablist">
+          {MIN_OPTIONS.map((o) => (
+            <button key={o.value} type="button" aria-pressed={q.min === o.value} onClick={() => setQ({ ...q, min: o.value })} aria-label={compact && o.value !== 0 ? `At least ${o.label}` : undefined}>
+              {o.value === 0 ? "Any" : o.label.replace(" BTC", "")}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
