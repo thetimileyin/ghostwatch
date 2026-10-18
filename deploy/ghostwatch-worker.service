@@ -1,0 +1,19 @@
+[Unit]
+Description=GhostWatch detector (reads every new block for long-dormant coins)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=ghost
+WorkingDirectory=/opt/ghostwatch
+EnvironmentFile=/etc/ghostwatch/env
+ExecStart=/usr/bin/npm run worker
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/ghost
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
