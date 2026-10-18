@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usd } from "@/lib/pulse/format";
 import type { Pulse, PulseBlock } from "@/lib/pulse/types";
 import type { View } from "./view";
-import { ArrowRightIcon, CaretDownIcon, CaretUpIcon, GhostIcon } from "../icons";
+import { ChangeChip } from "../change-chip";
+import { ArrowRightIcon, BookIcon, GhostIcon } from "../icons";
 import { MobileMenu } from "../mobile-menu";
 import { ThemeSwitch } from "../theme-switch";
 import { Wordmark } from "../wordmark";
@@ -39,10 +40,10 @@ function Timechain({ blocks, nowMs, landed }: { blocks: PulseBlock[]; nowMs: num
   const since = tip ? Math.max(0, nowMs / 1000 - tip.time) : 0;
   return (
     <ol className="tc" aria-label="Latest blocks">
-      {recent.map((b) => (
+      {recent.map((b, i) => (
         <li
           key={b.height}
-          className={`tc-b tc-b--${tone(b.medianFee)}${landed === b.height ? " tc-b--new" : ""}`}
+          className={`tc-b tc-b--${tone(b.medianFee)}${i < 5 ? " tc-b--old" : ""}${landed === b.height ? " tc-b--new" : ""}`}
           style={{ ["--f" as string]: Math.min(1, b.weight / 4_000_000) }}
           title={`Block ${b.height.toLocaleString("en-US")} · ${b.txCount.toLocaleString("en-US")} tx · ${b.pool ?? "unknown pool"}`}
         >
@@ -58,20 +59,28 @@ function Timechain({ blocks, nowMs, landed }: { blocks: PulseBlock[]; nowMs: num
   );
 }
 
+// Details the bar can drop, least important first, so it stays on one line.
+// Each step hides more; hovering what remains still explains it.
+const SHED = ["utc", "words", "chain", "guide"] as const;
+
 /**
- * True when the bar's three groups can't sit on one row at the current width.
- * Measures the groups' natural widths instead of guessing a breakpoint, so new
- * readouts can never push content over the buttons.
+ * Keeps the bar on one line by measuring it: at full detail, how much would each
+ * shedding step save? Apply the fewest steps that make it fit. Only when even the
+ * most compact version can't fit (tablets, phones) do the readouts take a second row.
+ * State lives on the element's data attributes, so measuring never re-renders React.
  */
-function useFitsOneRow() {
+function useOneLine() {
   const bar = useRef<HTMLElement>(null);
-  const [stack, setStack] = useState(false);
   useEffect(() => {
     const el = bar.current;
     if (!el) return;
+    const width = (q: string) => [...el.querySelectorAll<HTMLElement>(q)].reduce((w, n) => w + n.offsetWidth, 0);
     const measure = () => {
-      const [l, c, r] = [".cb-l", ".cb-c", ".cb-r"].map((q) => el.querySelector<HTMLElement>(q));
-      if (!l || !c || !r) return;
+      // Lay out at full detail on one row, then read the sizes.
+      delete el.dataset.stack;
+      SHED.forEach((k) => delete el.dataset[k]);
+      const groups = [".cb-l", ".cb-c", ".cb-r"].map((q) => el.querySelector<HTMLElement>(q));
+      if (groups.some((g) => !g)) return;
       const gap = (g: HTMLElement) => parseFloat(getComputedStyle(g).columnGap) || 0;
       const inner = (g: HTMLElement) => {
         const kids = [...g.children].filter((k) => getComputedStyle(k).display !== "none") as HTMLElement[];
@@ -79,16 +88,30 @@ function useFitsOneRow() {
       };
       const cs = getComputedStyle(el);
       const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-      const need = inner(l) + inner(c) + inner(r) + gap(el) * 2;
-      setStack(need > room);
+      const c = groups[1]!;
+      let need = groups.reduce((w, g) => w + inner(g!), 0) + gap(el) * 2;
+      const saves: Record<(typeof SHED)[number], number> = {
+        utc: width(".cb-utc") + (el.querySelector(".cb-utc") ? gap(c) : 0),
+        words: width(".cb-weather-l") + width(".cb-watch-l"),
+        chain: width(".tc-b--old") + 3 * el.querySelectorAll(".tc-b--old").length,
+        guide: width(".cb-guide-l"),
+      };
+      for (const k of SHED) {
+        if (need <= room) break;
+        el.dataset[k] = "";
+        need -= saves[k];
+      }
+      if (need > room) {
+        SHED.forEach((k) => delete el.dataset[k]);
+        el.dataset.stack = "";
+      }
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    el.querySelectorAll(".cb-c > *, .cb-r > *").forEach((k) => ro.observe(k));
     return () => ro.disconnect();
   });
-  return { bar, stack };
+  return bar;
 }
 
 export function ChainBar({
@@ -113,10 +136,10 @@ export function ChainBar({
   const change = pulse?.priceUsd && pulse.network.price24hAgo ? (pulse.priceUsd - pulse.network.price24hAgo) / pulse.network.price24hAgo : null;
   const w = chainWeather(pulse, nowMs);
   const woke = (pulse?.ghosts ?? []).filter((g) => nowMs / 1000 - g.blockTime < 86400).length;
-  const { bar, stack } = useFitsOneRow();
+  const bar = useOneLine();
   const utc = new Date(nowMs).toISOString().slice(11, 19);
   return (
-    <header className="cb" ref={bar} data-stack={stack || undefined}>
+    <header className="cb" ref={bar}>
       <div className="cb-l">
         <Link href="/" className="cb-brand" aria-label="GhostWatch home">
           <Wordmark size={20} />
@@ -137,19 +160,20 @@ export function ChainBar({
           <span className="cb-since num">{since != null ? `+${Math.floor(since / 60)}:${String(Math.floor(since % 60)).padStart(2, "0")}` : ""}</span>
         </div>
         <Timechain blocks={pulse?.blocks ?? []} nowMs={nowMs} landed={landed} />
-        <span className={`cb-weather cb-weather--${w.tone}`} title="Chain weather: a plain summary of fees, queue and block timing">
+        <span className={`cb-weather cb-weather--${w.tone}`} title={`Network: ${w.label}. A plain summary of fees, queue and block timing.`}>
           <span className="cb-weather-dot" aria-hidden="true" />
-          {w.label}
+          <span className="cb-weather-l">{w.label}</span>
         </span>
         {pulse?.watching != null && (
-          <span className="cb-watch" title="Tabs open on GhostWatch right now. Counted anonymously: no cookies, no IP addresses.">
+          <span className="cb-watch" title={`${pulse.watching} watching now. Tabs open on GhostWatch, counted anonymously: no cookies, no IP addresses.`}>
             <i aria-hidden="true" />
-            <b className="num">{pulse.watching.toLocaleString("en-US")}</b> watching
+            <b className="num">{pulse.watching.toLocaleString("en-US")}</b>
+            <span className="cb-watch-l">watching</span>
           </span>
         )}
         <span className="cb-price">
           <span className="num">{usd(pulse?.priceUsd ?? null)}</span>
-          {change != null && <em className={change >= 0 ? "up" : "down"}>{change >= 0 ? <CaretUpIcon aria-hidden /> : <CaretDownIcon aria-hidden />}{change >= 0 ? "+" : "−"}{Math.abs(change * 100).toFixed(2)}%</em>}
+          {change != null && <ChangeChip change={change} />}
         </span>
         {pulse && <span className="cb-utc num" title="Block times are in UTC">{utc} UTC</span>}
       </div>
@@ -163,8 +187,9 @@ export function ChainBar({
           ))}
         </div>
         {onGuide && (
-          <button type="button" className="cb-guide" onClick={onGuide}>
-            Field guide
+          <button type="button" className="cb-guide" onClick={onGuide} title="Field guide: what every signal means">
+            <BookIcon className="cb-guide-i" aria-hidden />
+            <span className="cb-guide-l">Field guide</span>
           </button>
         )}
         <Link href="/feed" className={`cb-alert${woke ? " is-on" : ""}`} title="Coins unspent for 5+ years that moved in the last 24 hours" aria-label={`Old coins moved in the last 24 hours: ${woke}`}>

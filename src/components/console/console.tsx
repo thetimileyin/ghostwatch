@@ -10,6 +10,7 @@ import { usePulse, useNow, type LiveEvent } from "@/lib/pulse/use-pulse";
 import { MachineFloor } from "./blocks-view";
 import { Dial } from "./day-dial";
 import { ViewCtx, useView, useViewPreference } from "./view";
+import { ChangeChip } from "../change-chip";
 import { ChainBar } from "./chain-bar";
 import { DotChart } from "./dot-chart";
 import { FieldGuide } from "./field-guide";
@@ -334,7 +335,11 @@ function PriceAndFees({ pulse }: { pulse: Pulse | null }) {
           <div key={t.k} className={`mk-t${t.tone === "hot" ? " mk-t--hot" : ""}`}>
             <div className="mk-k">{t.k}</div>
             <div className="mk-v num">{t.v}</div>
-            <div className={`mk-s${t.tone === "up" || t.tone === "down" ? ` mk-s--${t.tone}` : ""}`}>{t.s}</div>
+            {t.k === "Bitcoin" && ch != null ? (
+              <div className="mk-s"><ChangeChip change={ch} suffix="24h" /></div>
+            ) : (
+              <div className={`mk-s${t.tone === "up" || t.tone === "down" ? ` mk-s--${t.tone}` : ""}`}>{t.s}</div>
+            )}
           </div>
         ))}
       </div>

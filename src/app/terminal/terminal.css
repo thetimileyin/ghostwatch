@@ -34,18 +34,20 @@
 }
 
 /* ───────── Top bar ───────── */
-.cb { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px 18px; flex-wrap: wrap; padding: 8px 10px 8px 14px; background: var(--panel); border: 1px solid var(--frame); }
-.cb-l, .cb-c, .cb-r { display: flex; align-items: center; gap: 8px 16px; min-width: 0; flex-shrink: 0; }
+.cb { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px 14px; flex-wrap: wrap; padding: 8px 10px 8px 14px; background: var(--panel); border: 1px solid var(--frame); }
+.cb-l, .cb-c, .cb-r { display: flex; align-items: center; gap: 8px 14px; min-width: 0; flex-shrink: 0; }
 .cb-c { flex-shrink: 1; }
+/* Items keep their natural width so the bar measures truthfully; it sheds detail instead of squeezing. */
+.cb-l > *, .cb-c > *, .cb-r > * { flex-shrink: 0; }
 .cb-c { flex: 1; justify-content: center; }
 .cb-r { gap: 6px; }
 .cb-brand { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 15px; letter-spacing: -0.02em; color: var(--fg); }
 .cb-brand em { font-style: normal; color: var(--fg-3); font-weight: 500; }
-.cb-nav { display: flex; gap: 2px; padding-left: 14px; border-left: 1px solid var(--line-2); }
-.cb-nav a { color: var(--fg-3); text-decoration: none; padding: 7px 9px; }
+.cb-nav { display: flex; gap: 2px; padding-left: 12px; border-left: 1px solid var(--line-2); }
+.cb-nav a { color: var(--fg-3); text-decoration: none; padding: 7px 7px; }
 .cb-nav a:hover { color: var(--fg); }
 .cb-nav a[aria-current="page"] { color: var(--fg); background: var(--line); }
-.cb-clock { display: inline-flex; align-items: baseline; gap: 7px; padding-left: 14px; border-left: 1px solid var(--line-2); }
+.cb-clock { display: inline-flex; align-items: baseline; gap: 7px; padding-left: 12px; border-left: 1px solid var(--line-2); }
 .cb-height { font-family: var(--font-pixel); font-size: 22px; letter-spacing: 0; color: var(--fg); }
 .cb-since { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); min-width: 40px; }
 
@@ -65,8 +67,7 @@
 .cb-weather-dot { width: 7px; height: 7px; background: var(--fg); }
 .cb-weather--busy .cb-weather-dot, .cb-weather--slow .cb-weather-dot { background: var(--wait); }
 .cb-weather--hot .cb-weather-dot { background: var(--accent); }
-.cb-price { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 13px; color: var(--fg); white-space: nowrap; }
-.cb-price em { font-style: normal; font-size: 11px; }
+.cb-price { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 13px; color: var(--fg); white-space: nowrap; }
 .up { color: var(--fg); }
 .down { color: var(--bad); }
 .cb-watch { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--fg-2); white-space: nowrap; }
@@ -75,8 +76,6 @@
 .cb-watch i::after { content: ""; position: absolute; inset: -3px; border: 1px solid var(--accent); opacity: 0; animation: watch-ping 2.4s var(--ease-out) infinite; }
 @keyframes watch-ping { 0% { opacity: 0.7; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.8); } }
 .cb-utc { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); white-space: nowrap; }
-.cb-price em { display: inline-flex; align-items: center; line-height: 1; }
-.cb-price em svg { width: 14px; height: 14px; margin-right: 1px; }
 
 /* Segmented control: square, hairline */
 .seg { display: inline-flex; border: 1px solid var(--line-2); }
@@ -250,7 +249,7 @@
 
 /* ───────── Field guide ───────── */
 .gw-guide { width: min(680px, calc(100vw - 32px)); max-height: 82vh; margin: auto; padding: 0; background: var(--ink-2); color: var(--fg); border: 1px solid var(--line-3); }
-.gw-guide::backdrop { background: rgba(10, 10, 10, 0.45); }
+.gw-guide::backdrop { background: rgba(8, 8, 9, 0.45); background: color-mix(in srgb, var(--void) 55%, transparent); backdrop-filter: blur(8px) saturate(0.9); -webkit-backdrop-filter: blur(8px) saturate(0.9); }
 .gw-guide header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line-2); position: sticky; top: 0; background: var(--ink-2); }
 .gw-guide h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
 .gw-guide-lede { color: var(--fg-2); margin: 14px 20px 4px; font-size: 14px; }
@@ -307,7 +306,17 @@
 @keyframes guide-fade { from { opacity: 0; } to { opacity: 1; } }
 
 /* ───────── Responsive ───────── */
-/* When the three groups don't fit one row (measured in ChainBar), the readouts take a full row of their own. */
+/* One line: ChainBar measures the bar and sheds detail in this order until it fits. */
+.cb[data-utc] .cb-utc { display: none; }
+.cb[data-words] .cb-weather-l, .cb[data-words] .cb-watch-l { display: none; }
+.cb[data-chain] .tc-b--old { display: none; }
+.cb-guide { display: inline-flex; align-items: center; gap: 7px; }
+.cb-guide-i { display: none; width: 15px; height: 15px; }
+.cb[data-guide] .cb-guide-l { display: none; }
+.cb[data-guide] .cb-guide-i { display: block; }
+.cb[data-guide] .cb-guide { padding: 0; width: 30px; justify-content: center; }
+.cb-watch-l { margin-left: -2px; }
+/* Only if even the compact bar can't fit (tablets, phones), the readouts take a full row of their own. */
 .cb[data-stack] .cb-c { order: 3; flex-basis: 100%; flex-wrap: wrap; row-gap: 8px; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--line); }
 @media (max-width: 1180px) {
   .gw { grid-template-columns: 250px minmax(0, 1fr); grid-template-areas: "top top" "left center" "right right"; height: auto; }

@@ -26,3 +26,6 @@ export { default as MenuIcon } from "@mingcute/react/core-regular/menu";
 export { default as CloseIcon } from "@mingcute/react/core-regular/close";
 export { default as CaretUpIcon } from "@mingcute/react/core-filled/up-small";
 export { default as CaretDownIcon } from "@mingcute/react/core-filled/down-small";
+export { default as BookIcon } from "@mingcute/react/core-regular/book-2";
+export { default as TrendUpIcon } from "@mingcute/react/core-regular/trending-up";
+export { default as TrendDownIcon } from "@mingcute/react/core-regular/trending-down";
