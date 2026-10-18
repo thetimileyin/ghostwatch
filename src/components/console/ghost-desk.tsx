@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SleepTrack } from "@/components/event-bits";
-import { ArrowRightIcon } from "@/components/icons";
+import { ArrowRightIcon, CloseIcon } from "@/components/icons";
 import { dateShort, dateTimeUtc, durationShort, monthYear, satsToBtcString, splitBtc } from "@/lib/domain/format";
 import { AGE_OPTIONS, MIN_OPTIONS, feedQueryString, type FeedQuery } from "@/lib/domain/filters";
 import { ageClause, signalGuide, summary } from "@/lib/domain/signal";
@@ -30,6 +30,12 @@ export function GhostDesk({ mode }: { mode: Mode }) {
   const [stats, setStats] = useState<FeedStats | null>(null);
   const [failed, setFailed] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // On narrow screens the side column sits far below the list, so a tap opens the preview as a sheet instead.
+  const [sheet, setSheet] = useState(false);
+  const pick = (id: string) => {
+    setSelectedId(id);
+    if (window.matchMedia(SHEET_QUERY).matches) setSheet(true);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -114,7 +120,7 @@ export function GhostDesk({ mode }: { mode: Mode }) {
                 const { head, tail } = splitBtc(e.dormantSats);
                 return (
                   <li key={e.id}>
-                    <button type="button" className={`gl-i${selected?.id === e.id ? " is-on" : ""}`} data-age={e.cohort} onClick={() => setSelectedId(e.id)} aria-pressed={selected?.id === e.id}>
+                    <button type="button" className={`gl-i${selected?.id === e.id ? " is-on" : ""}`} data-age={e.cohort} onClick={() => pick(e.id)} aria-haspopup="dialog" aria-pressed={selected?.id === e.id}>
                       <span className={`rw-dot rw-dot--g${e.cohort}`} aria-hidden="true" />
                       <span className="gl-amt num">
                         {head}
@@ -134,8 +140,41 @@ export function GhostDesk({ mode }: { mode: Mode }) {
         </main>
 
         <aside className="gw-col gwx-right" aria-label="Selected event">{selected ? <Preview e={selected} now={now} /> : <Panel title="Selected"><p className="pn-empty">{events ? "Pick an event to see it here." : "Loading…"}</p></Panel>}</aside>
+        {sheet && selected && <PreviewSheet e={selected} now={now} onClose={() => setSheet(false)} />}
       </div>
     </ViewCtx.Provider>
+  );
+}
+
+// Matches the breakpoint where the preview column stops sitting beside the list.
+const SHEET_QUERY = "(max-width: 1180px)";
+
+/** The preview as a bottom sheet on phones and tablets: slides up over a blurred backdrop. */
+function PreviewSheet({ e, now, onClose }: { e: GhostEvent; now: number; onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    // No close() in cleanup: React's dev double-mount would fire the close event and dismiss it at once.
+    const d = ref.current;
+    if (d && !d.open) d.showModal();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="gwx-sheet"
+      onClose={onClose}
+      onClick={(ev) => ev.target === ref.current && ref.current?.close()}
+      aria-label={`Selected event: ${satsToBtcString(e.dormantSats)} BTC`}
+    >
+      <div className="gwx-sheet-in">
+        <div className="gwx-sheet-bar">
+          <span className="gwx-sheet-grip" aria-hidden="true" />
+          <button type="button" className="theme-btn" onClick={() => ref.current?.close()} aria-label="Close preview">
+            <CloseIcon aria-hidden />
+          </button>
+        </div>
+        <Preview e={e} now={now} />
+      </div>
+    </dialog>
   );
 }
 
