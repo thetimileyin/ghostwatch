@@ -5,7 +5,7 @@
 # Safe to re-run: every step checks before it changes anything.
 set -euo pipefail
 
-DOMAIN="${DOMAIN:-bitcoinghostwatch.com}"
+DOMAIN="${DOMAIN:-bitcoinghostwatch.online}"
 APP=/opt/ghostwatch
 ENV_DIR=/etc/ghostwatch
 

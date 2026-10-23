@@ -54,7 +54,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
 
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "Mono", fontSize: 18, letterSpacing: 0.5, color: OG.fg3 }}>
           <span>Not proof of a sale, a hack, or who owns it.</span>
-          <span>{new URL(process.env.PUBLIC_BASE_URL ?? "https://bitcoinghostwatch.com").host}</span>
+          <span>{new URL(process.env.PUBLIC_BASE_URL ?? "https://bitcoinghostwatch.online").host}</span>
         </div>
       </div>
     ),

@@ -13,7 +13,7 @@ Everything runs on one Ubuntu 24.04 server: the website (Next.js), the detector
    This copies the code, installs Postgres, Node 22, Caddy, a firewall and automatic
    security updates, creates the database (password generated on the server, kept in
    `/etc/ghostwatch/env`), builds the app and starts both services.
-3. Point DNS at the server: `A` and `AAAA` records for `bitcoinghostwatch.com` and
+3. Point DNS at the server: `A` and `AAAA` records for `bitcoinghostwatch.online` and
    `www`. Caddy fetches the HTTPS certificate on its own once DNS resolves.
 4. Rebuild the archive (same past blocks as the local archive):
    ```bash
