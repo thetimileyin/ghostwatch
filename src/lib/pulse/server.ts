@@ -1,3 +1,4 @@
+import { readCache, writeCache } from "@/lib/db/cache";
 import { listEvents } from "@/lib/db/read";
 import { aggregateNodes, type RawSnapshot } from "./nodes";
 import type { NodesSnapshot, Pulse, PulseBlock, PulseNetwork, PulseTx } from "./types";
@@ -138,10 +139,14 @@ export async function getPulse(): Promise<Pulse> {
   }
 }
 
+const NODES_KEY = "nodes:v1";
+
 /**
  * Node locations, plus per-place details when the full snapshot has arrived.
  * Locations come first (small, quick); the full snapshot is fetched in the background
  * at most once an hour and replaces them when it lands. Only aggregates are kept.
+ * Every good snapshot is saved to the database, so a restart or an outage at the
+ * source falls back to the last known nodes instead of an empty map.
  */
 export async function getNodes(): Promise<NodesSnapshot | null> {
   const c = state.gwNodes;
@@ -151,10 +156,21 @@ export async function getNodes(): Promise<NodesSnapshot | null> {
     const raw = await getJson<{ timestamp: number; total_nodes: number; coordinates: [number, number][] }>(NODES_URL, 15000);
     const data: NodesSnapshot = { timestamp: raw.timestamp, totalNodes: raw.total_nodes, points: raw.coordinates };
     // Don't replace a detailed snapshot with a bare one.
-    if (!state.gwNodes?.data.places) state.gwNodes = { at: Date.now(), data };
+    if (!state.gwNodes?.data.places) {
+      state.gwNodes = { at: Date.now(), data };
+      void writeCache(NODES_KEY, data);
+    }
     return state.gwNodes?.data ?? data;
   } catch {
-    return c?.data ?? null;
+    if (c) return c.data;
+    // Source down and nothing in memory (e.g. just restarted): use the last saved snapshot.
+    const saved = await readCache<NodesSnapshot>(NODES_KEY);
+    if (saved) {
+      // Treat it as fresh enough to stop hammering the source; the background refresh still runs.
+      state.gwNodes = { at: Date.now() - NODES_TTL_MS + 10 * 60_000, data: saved.value };
+      return saved.value;
+    }
+    return null;
   }
 }
 
@@ -164,7 +180,11 @@ function refreshFullNodes() {
   f.at = Date.now();
   f.inflight = getJson<RawSnapshot>(NODES_FULL_URL, 120_000)
     .then((raw) => {
-      if (raw?.nodes && Object.keys(raw.nodes).length > 0) state.gwNodes = { at: Date.now(), data: aggregateNodes(raw) };
+      if (raw?.nodes && Object.keys(raw.nodes).length > 0) {
+        const data = aggregateNodes(raw);
+        state.gwNodes = { at: Date.now(), data };
+        void writeCache(NODES_KEY, data);
+      }
     })
     .catch(() => {
       f.at = Date.now() - NODES_TTL_MS + 10 * 60_000; // try again in about 10 minutes

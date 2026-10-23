@@ -23,12 +23,37 @@ type Tab = "map" | "blocks" | "dial";
 /** Nodes snapshot and ~24h of blocks, shared by the terminal views. */
 export function useNetworkContext(tipHeight: number | undefined) {
   const [nodes, setNodes] = useState<NodesSnapshot | null>(null);
+  const [nodesDown, setNodesDown] = useState(false);
   const [day, setDay] = useState<PulseBlock[]>([]);
   useEffect(() => {
-    fetch("/api/nodes")
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setNodes)
-      .catch(() => {});
+    // Retry every minute until node data arrives, then refresh every 15 minutes
+    // (picks up the detailed snapshot once the server has it).
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const load = () =>
+      fetch("/api/nodes")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d: NodesSnapshot | null) => {
+          if (!alive) return;
+          if (d) {
+            setNodes(d);
+            setNodesDown(false);
+            timer = setTimeout(load, 15 * 60_000);
+          } else {
+            setNodesDown(true);
+            timer = setTimeout(load, 60_000);
+          }
+        })
+        .catch(() => {
+          if (!alive) return;
+          setNodesDown(true);
+          timer = setTimeout(load, 60_000);
+        });
+    load();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
   }, []);
   useEffect(() => {
     let alive = true;
@@ -48,7 +73,7 @@ export function useNetworkContext(tipHeight: number | undefined) {
       clearTimeout(retry);
     };
   }, [tipHeight]);
-  return { nodes, day };
+  return { nodes, nodesDown, day };
 }
 
 /** Briefly marks the newest block in the timechain strip when it lands. */
@@ -75,7 +100,7 @@ export function Console() {
   const [projection, setProjection] = useState<"flat" | "globe">("flat");
   const [guide, setGuide] = useState(false);
   const now = useNow();
-  const { nodes, day } = useNetworkContext(pulse?.blocks[0]?.height);
+  const { nodes, nodesDown, day } = useNetworkContext(pulse?.blocks[0]?.height);
   const landed = useLanded(live.newBlock);
   const prev = useRef<Pulse | null>(null);
   const [delta, setDelta] = useState<{ mempool: number; price: number; blocks: number; notable: number } | null>(null);
@@ -107,7 +132,7 @@ export function Console() {
           <Vitals pulse={pulse} nodes={nodes} day={day} now={now} />
           <CoinInspector pulse={pulse} now={now} />
           <Miners pulse={pulse} />
-          <Nodes nodes={nodes} />
+          <Nodes nodes={nodes} down={nodesDown} />
         </aside>
 
         <main className="gw-center" id="main">
@@ -136,7 +161,9 @@ export function Console() {
                 </div>
               )}
               <span className="gw-tabs-hint">
-                {tab === "map"
+                {tab === "map" && !nodes && nodesDown
+                  ? "Node locations are unavailable right now: the public source isn't answering. Retrying every minute."
+                  : tab === "map"
                   ? view === "simple"
                     ? "Where Bitcoin's nodes are. Lines show transactions spreading."
                     : `${nodes ? nodes.totalNodes.toLocaleString("en-US") : "…"} reachable nodes · arcs: sampled tx, random endpoints`
@@ -296,7 +323,7 @@ function CoinInspector({ pulse, now }: { pulse: Pulse | null; now: number }) {
  * The reachable network in counts: where nodes are and what they run. Never individual
  * nodes: GhostWatch shows places, not people.
  */
-function Nodes({ nodes }: { nodes: NodesSnapshot | null }) {
+function Nodes({ nodes, down }: { nodes: NodesSnapshot | null; down: boolean }) {
   const sum = nodes?.summary;
   const pct = (n: number) => `${Math.round(n * 100)}%`;
   const bars = (list: { label: string; share: number }[]) =>
@@ -310,7 +337,13 @@ function Nodes({ nodes }: { nodes: NodesSnapshot | null }) {
   return (
     <Panel title="Nodes" meta={nodes ? `${compact(nodes.totalNodes)} reachable` : "…"}>
       {!sum ? (
-        <p className="pn-empty">{nodes ? "Software and places are still loading. The map shows locations meanwhile." : "Loading…"}</p>
+        <p className="pn-empty">
+          {nodes
+            ? "Software and places are still loading. The map shows locations meanwhile."
+            : down
+              ? "The public node source (btcnodes.io) isn't answering right now. Retrying every minute."
+              : "Loading…"}
+        </p>
       ) : (
         <>
           <Row label="Caught up" sub="at the latest block" value={pct(sum.synced)} />

@@ -96,3 +96,12 @@ create table if not exists notifications (
   updated_at          timestamptz not null default now(),
   primary key (event_id, channel, kind)
 );
+
+-- Last good copies of slow third-party data (for example the node snapshot), so a
+-- restart or an outage at the source shows the last known state instead of nothing.
+-- Aggregates only: the node snapshot stored here has no addresses or providers.
+create table if not exists app_cache (
+  key         text primary key,
+  value       jsonb not null,
+  updated_at  timestamptz not null default now()
+);
