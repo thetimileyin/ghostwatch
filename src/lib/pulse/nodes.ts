@@ -87,7 +87,7 @@ export function aggregateNodes(raw: RawSnapshot): NodesSnapshot {
   const summary: NodeSummary = {
     total,
     tor,
-    countries: shares(countries, located, 6),
+    countries: points.length ? shares(countries, located, 6) : [],
     versions: shares(versions, total || 1, 5),
     synced: total ? synced / total : 0,
   };

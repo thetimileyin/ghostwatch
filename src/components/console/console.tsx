@@ -350,9 +350,13 @@ function Nodes({ nodes, down }: { nodes: NodesSnapshot | null; down: boolean }) 
           <Row label="Over Tor" sub="no location, not on the map" value={compact(sum.tor)} />
           <p className="nd-k">Software</p>
           {bars(sum.versions)}
-          <p className="nd-k">Countries</p>
-          {bars(sum.countries)}
-          <p className="nd-k">Hover or tap a place on the map for its nodes.</p>
+          {sum.countries.length > 0 && (
+            <>
+              <p className="nd-k">Countries</p>
+              {bars(sum.countries)}
+            </>
+          )}
+          {nodes?.places?.length ? <p className="nd-k">Hover or tap a place on the map for its nodes.</p> : null}
         </>
       )}
     </Panel>

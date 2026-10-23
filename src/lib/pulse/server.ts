@@ -151,16 +151,16 @@ const NODES_KEY = "nodes:v1";
 export async function getNodes(): Promise<NodesSnapshot | null> {
   const c = state.gwNodes;
   refreshFullNodes();
-  if (c && (Date.now() - c.at < NODES_TTL_MS || c.data.places)) return c.data;
+  if (c && c.data.points.length > 0 && Date.now() - c.at < NODES_TTL_MS) return c.data;
   try {
     const raw = await getJson<{ timestamp: number; total_nodes: number; coordinates: [number, number][] }>(NODES_URL, 15000);
     const data: NodesSnapshot = { timestamp: raw.timestamp, totalNodes: raw.total_nodes, points: raw.coordinates };
-    // Don't replace a detailed snapshot with a bare one.
-    if (!state.gwNodes?.data.places) {
-      state.gwNodes = { at: Date.now(), data };
-      void writeCache(NODES_KEY, data);
-    }
-    return state.gwNodes?.data ?? data;
+    // Keep any network summary we already have; refresh the map points.
+    const prev = state.gwNodes?.data;
+    const merged: NodesSnapshot = prev?.summary ? { ...data, summary: prev.summary, places: prev.places } : data;
+    state.gwNodes = { at: Date.now(), data: merged };
+    void writeCache(NODES_KEY, merged);
+    return merged;
   } catch {
     if (c) return c.data;
     // Source down and nothing in memory (e.g. just restarted): use the last saved snapshot.
@@ -181,7 +181,13 @@ function refreshFullNodes() {
   f.inflight = getJson<RawSnapshot>(NODES_FULL_URL, 120_000)
     .then((raw) => {
       if (raw?.nodes && Object.keys(raw.nodes).length > 0) {
-        const data = aggregateNodes(raw);
+        const full = aggregateNodes(raw);
+        // The source stopped publishing locations in the full snapshot (late 2026): keep the
+        // map points from the coordinates feed and take only what the full snapshot really has.
+        const prev = state.gwNodes?.data;
+        const data: NodesSnapshot =
+          full.points.length > 0 ? full : { ...(prev ?? full), totalNodes: full.totalNodes, summary: full.summary, places: prev?.places };
+        if (data.points.length === 0 && !prev) return; // nothing to draw yet; don't cache an empty map
         state.gwNodes = { at: Date.now(), data };
         void writeCache(NODES_KEY, data);
       }
