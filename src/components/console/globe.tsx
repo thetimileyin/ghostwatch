@@ -146,7 +146,7 @@ export function Globe({
       for (const v of land) {
         const [x, y, d] = proj(v);
         if (d <= 0) continue;
-        ctx.fillStyle = `rgba(${P.fg3},${0.1 + 0.45 * d})`;
+        ctx.fillStyle = `rgba(${P.dark ? P.fg3 : P.fg2},${(P.dark ? 0.1 : 0.14) + (P.dark ? 0.45 : 0.5) * d})`;
         ctx.fillRect(x - 0.9, y - 0.9, 1.8, 1.8);
       }
 
@@ -179,7 +179,7 @@ export function Globe({
         const head = Math.min(1, k);
         const fade = k > 1 ? 1 - (k - 1) / 0.6 : 1;
         const rgb = arcRgb(P, a.cls);
-        ctx.strokeStyle = `rgba(${rgb},${(a.cls === "regular" ? 0.45 : 0.85) * fade})`;
+        ctx.strokeStyle = `rgba(${rgb},${(a.cls === "regular" ? (P.dark ? 0.45 : 0.6) : 0.9) * fade})`;
         ctx.lineWidth = a.cls === "regular" ? 0.9 : 1.6;
         ctx.beginPath();
         let started = false;

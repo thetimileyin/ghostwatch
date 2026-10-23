@@ -104,7 +104,7 @@ export function NetMap({
 
       const P = palette();
       // Graticule
-      ctx.strokeStyle = `rgba(${P.fg},0.06)`;
+      ctx.strokeStyle = `rgba(${P.fg},${P.dark ? 0.06 : 0.09})`;
       ctx.lineWidth = 1;
       ctx.beginPath();
       for (let lng = -180; lng <= 180; lng += 30) {
@@ -122,7 +122,8 @@ export function NetMap({
       // Land: square pixels
       const cell = (CELL / 360) * mw;
       const sq = Math.max(1, cell * 0.62);
-      ctx.fillStyle = `rgba(${P.fg},${P.dark ? 0.16 : 0.14})`;
+      // Light mode needs darker land: pale pixels on an off-white sheet washed out.
+      ctx.fillStyle = `rgba(${P.fg},${P.dark ? 0.16 : 0.26})`;
       for (const [lat, lng] of land) {
         const [x, y] = proj(lat, lng);
         ctx.fillRect(x - sq / 2, y - sq / 2, sq, sq);
@@ -173,8 +174,8 @@ export function NetMap({
         const head = Math.min(1, k);
         const fade = k > 1 ? 1 - (k - 1) / 0.6 : 1;
         const rgb = arcRgb(P, r.cls);
-        ctx.strokeStyle = `rgba(${rgb},${(r.cls === "regular" ? 0.32 : 0.75) * fade})`;
-        ctx.lineWidth = r.cls === "regular" ? 0.8 : 1.4;
+        ctx.strokeStyle = `rgba(${rgb},${(r.cls === "regular" ? (P.dark ? 0.32 : 0.55) : 0.85) * fade})`;
+        ctx.lineWidth = r.cls === "regular" ? (P.dark ? 0.8 : 1) : 1.5;
         ctx.beginPath();
         const steps = 24;
         for (let s = 0; s <= steps * head; s++) {
