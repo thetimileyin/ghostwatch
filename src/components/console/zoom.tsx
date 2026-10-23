@@ -14,6 +14,20 @@ export interface ZoomApi {
  * point) and pan (pixels). Drag only pans when `canPan()` says so, so an unzoomed map
  * on a phone still lets the page scroll.
  */
+/**
+ * Ease a value from 0 to 1 over a short time (ease-out, so it settles softly), calling
+ * step each frame. Returns a cancel function. Used to glide the map back on reset.
+ */
+export function tween(ms: number, step: (k: number) => void): () => void {
+  const t0 = performance.now();
+  let raf = requestAnimationFrame(function frame(t) {
+    const p = Math.min(1, (t - t0) / ms);
+    step(1 - (1 - p) ** 4);
+    if (p < 1) raf = requestAnimationFrame(frame);
+  });
+  return () => cancelAnimationFrame(raf);
+}
+
 export function attachZoom(
   c: HTMLCanvasElement,
   h: { zoom: (factor: number, x: number, y: number) => void; pan: (dx: number, dy: number) => void; canPan: () => boolean; end?: () => void },

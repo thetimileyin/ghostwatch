@@ -7,7 +7,7 @@ import { btc } from "@/lib/pulse/format";
 import type { NodesSnapshot, PulseBlock, PulseTx } from "@/lib/pulse/types";
 import { palette, type Palette } from "@/lib/theme/theme";
 import { NodeCard, hitPlace, placeRadius, type PlaceHit } from "./node-card";
-import { ZoomControls, attachZoom, type ZoomApi } from "./zoom";
+import { ZoomControls, attachZoom, tween, type ZoomApi } from "./zoom";
 
 const RAD = Math.PI / 180;
 const arcRgb = (p: Palette, c: TxClass) => (c === "rush" ? p.accent : c === "whale" ? p.fg : c === "large" ? p.fg2 : p.fg3);
@@ -95,19 +95,30 @@ export function Globe({
     let last = performance.now();
 
     const MAX_Z = 4;
+    let stopGlide = () => {};
     const setZoom = (z: number) => {
+      stopGlide();
       zoom.current = Math.max(1, Math.min(MAX_Z, z));
       if (reduced) draw();
     };
     api.current = {
       zoomIn: () => setZoom(zoom.current * 1.5),
       zoomOut: () => setZoom(zoom.current / 1.5),
-      reset: () => setZoom(1),
+      reset: () => {
+        if (reduced) { rot.current.lat = 22; return setZoom(1); }
+        stopGlide();
+        const z0 = zoom.current, lat0 = rot.current.lat;
+        stopGlide = tween(520, (e) => {
+          zoom.current = z0 + (1 - z0) * e;
+          rot.current.lat = lat0 + (22 - lat0) * e;
+        });
+      },
     };
     // Drag turns the globe (slower when zoomed in, so it doesn't spin away); wheel or pinch zooms.
     const detach = attachZoom(c, {
       zoom: (f) => { if (zoomable) setZoom(zoom.current * f); },
       pan: (dx, dy) => {
+        stopGlide();
         const r = rot.current, z = zoom.current;
         r.drag = r.drag ?? { x: 0, y: 0, lng: r.lng, lat: r.lat };
         r.lng -= (dx * 0.35) / z;
@@ -290,6 +301,7 @@ export function Globe({
     const still = reduced ? setInterval(draw, 1000) : undefined;
     return () => {
       detach();
+      stopGlide();
       c.removeEventListener("pointermove", onMove);
       c.removeEventListener("pointerleave", onLeave);
       c.removeEventListener("click", onTap);

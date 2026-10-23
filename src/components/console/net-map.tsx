@@ -7,7 +7,7 @@ import { btc } from "@/lib/pulse/format";
 import type { NodesSnapshot, PulseBlock, PulseTx } from "@/lib/pulse/types";
 import { palette, type Palette } from "@/lib/theme/theme";
 import { NodeCard, hitPlace, placeRadius, type PlaceHit } from "./node-card";
-import { ZoomControls, attachZoom, type ZoomApi } from "./zoom";
+import { ZoomControls, attachZoom, tween, type ZoomApi } from "./zoom";
 
 const LAT_TOP = 80;
 const LAT_BOTTOM = -58;
@@ -104,7 +104,9 @@ export function NetMap({
       c.style.touchAction = v.k > 1.01 ? "none" : "pan-y";
       c.style.cursor = v.k > 1.01 ? "grab" : "zoom-in";
     };
+    let stopGlide = () => {};
     const zoomAt = (f: number, x: number, y: number) => {
+      stopGlide();
       const v = view.current;
       const k = Math.max(1, Math.min(MAX_K, v.k * f));
       v.tx = x - ((x - v.tx) * k) / v.k;
@@ -116,12 +118,20 @@ export function NetMap({
     api.current = {
       zoomIn: () => zoomAt(1.6, c.clientWidth / 2, c.clientHeight / 2),
       zoomOut: () => zoomAt(1 / 1.6, c.clientWidth / 2, c.clientHeight / 2),
-      reset: () => { view.current = { k: 1, tx: 0, ty: 0 }; clamp(); if (reduced) draw(); },
+      reset: () => {
+        stopGlide();
+        if (reduced) { view.current = { k: 1, tx: 0, ty: 0 }; clamp(); draw(); return; }
+        const from = { ...view.current };
+        stopGlide = tween(420, (e) => {
+          view.current = { k: from.k + (1 - from.k) * e, tx: from.tx * (1 - e), ty: from.ty * (1 - e) };
+          clamp();
+        });
+      },
     };
     clamp();
     const detach = attachZoom(c, {
       zoom: zoomAt,
-      pan: (dx, dy) => { view.current.tx += dx; view.current.ty += dy; clamp(); if (reduced) draw(); },
+      pan: (dx, dy) => { stopGlide(); view.current.tx += dx; view.current.ty += dy; clamp(); if (reduced) draw(); },
       canPan: () => view.current.k > 1.01,
     });
     const pick = (e: PointerEvent | MouseEvent) => {
@@ -294,6 +304,7 @@ export function NetMap({
     const still = reduced ? setInterval(draw, 1000) : undefined;
     return () => {
       detach();
+      stopGlide();
       c.removeEventListener("pointermove", onMove);
       c.removeEventListener("pointerleave", onLeave);
       c.removeEventListener("click", onTap);
