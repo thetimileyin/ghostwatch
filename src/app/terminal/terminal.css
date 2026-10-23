@@ -119,6 +119,22 @@
 .gw-stage-body { position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 .gw-map-canvas, .gw-globe-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .gw-globe-canvas { cursor: grab; touch-action: none; }
+/* Place card: what a spot on the map is (counts only) */
+.nc { position: absolute; z-index: 3; width: 220px; padding: 10px 12px 11px; border: 1px solid var(--line-3); background: var(--ink-2); box-shadow: 0 18px 40px -20px rgba(0, 0, 0, 0.6); pointer-events: none; animation: nc-in 140ms var(--ease-out); }
+@keyframes nc-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.nc-h { display: flex; flex-direction: column; gap: 2px; margin-bottom: 8px; }
+.nc-h b { font-size: 13.5px; font-weight: 600; color: var(--fg); }
+.nc-h span { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent-ink); }
+.nc-v { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.nc-v li { display: grid; grid-template-columns: minmax(0, 1fr) 54px 32px; gap: 8px; align-items: center; font-size: 11.5px; color: var(--fg-2); }
+.nc-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nc-bar { height: 5px; background: repeating-linear-gradient(90deg, var(--line-2) 0 2px, transparent 2px 4px); }
+.nc-bar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px); }
+.nc-p { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg); text-align: right; }
+.nc-f { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--fg-3); }
+.nc-f span { font-family: var(--font-mono); color: var(--fg); }
+.nd-k { margin: 12px 0 2px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-4); }
+
 /* Zoom buttons, bottom-right of the map or globe */
 .zm { position: absolute; right: 10px; bottom: 10px; z-index: 2; display: flex; flex-direction: column; border: 1px solid var(--line-2); background: var(--ink-2); }
 .zm button { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 0; background: none; color: var(--fg-2); cursor: pointer; transition: color 120ms ease, background-color 120ms ease, transform 120ms var(--ease-out); }

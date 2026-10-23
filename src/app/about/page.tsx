@@ -120,6 +120,10 @@ export default function About() {
               the code is never tied to your IP address.
             </p>
             <p>We describe coins, not people. We don&apos;t label addresses with names, and we don&apos;t publish lists of vulnerable coins.</p>
+            <p>
+              The same goes for Bitcoin nodes. The map groups them by place: how many nodes are in a city, which software they run, and how many
+              are caught up. Node addresses, hostnames and hosting providers are dropped on our server and never shown.
+            </p>
           </div>
         </section>
 

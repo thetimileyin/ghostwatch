@@ -75,4 +75,37 @@ export interface NodesSnapshot {
   totalNodes: number;
   /** [lat, lng] of nodes with a public location (Tor nodes have none). */
   points: [number, number][];
+  /** Per-place counts (city or area). Absent when only coordinates are available. */
+  places?: NodePlace[];
+  summary?: NodeSummary;
+}
+
+/** A share of nodes: label and fraction 0 to 1. */
+export interface NodeShare {
+  label: string;
+  share: number;
+}
+
+/**
+ * Nodes grouped by place. Deliberately no addresses, hostnames or hosting providers:
+ * GhostWatch shows places, not people.
+ */
+export interface NodePlace {
+  lat: number;
+  lng: number;
+  /** "Frankfurt, DE", or just the country code when the city is unknown. */
+  name: string;
+  count: number;
+  versions: NodeShare[];
+  /** Fraction of these nodes at or within 2 blocks of the snapshot's best height. */
+  synced: number;
+}
+
+export interface NodeSummary {
+  total: number;
+  /** Reachable only over Tor: no location, so never on the map. */
+  tor: number;
+  countries: NodeShare[];
+  versions: NodeShare[];
+  synced: number;
 }

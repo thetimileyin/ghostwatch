@@ -1,8 +1,11 @@
 import { listEvents } from "@/lib/db/read";
+import { aggregateNodes, type RawSnapshot } from "./nodes";
 import type { NodesSnapshot, Pulse, PulseBlock, PulseNetwork, PulseTx } from "./types";
 
 const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
 const NODES_URL = process.env.NODES_API ?? "https://btcnodes.io/api/v1/snapshots/latest/?field=coordinates";
+// Full snapshot (software, height, city per node). Large and slow, so fetched in the background.
+const NODES_FULL_URL = process.env.NODES_FULL_API ?? "https://btcnodes.io/api/v1/snapshots/latest/";
 const PULSE_TTL_MS = 4000;
 const NODES_TTL_MS = 60 * 60 * 1000;
 const TX_BUFFER = 160;
@@ -18,6 +21,7 @@ const state = globalThis as unknown as {
   gwPulse?: { at: number; data: Pulse; inflight?: Promise<Pulse> };
   gwTxs?: Map<string, PulseTx>;
   gwNodes?: { at: number; data: NodesSnapshot };
+  gwNodesFull?: { at: number; inflight?: Promise<void> };
 };
 
 interface RawBlock {
@@ -134,17 +138,40 @@ export async function getPulse(): Promise<Pulse> {
   }
 }
 
+/**
+ * Node locations, plus per-place details when the full snapshot has arrived.
+ * Locations come first (small, quick); the full snapshot is fetched in the background
+ * at most once an hour and replaces them when it lands. Only aggregates are kept.
+ */
 export async function getNodes(): Promise<NodesSnapshot | null> {
   const c = state.gwNodes;
-  if (c && Date.now() - c.at < NODES_TTL_MS) return c.data;
+  refreshFullNodes();
+  if (c && (Date.now() - c.at < NODES_TTL_MS || c.data.places)) return c.data;
   try {
     const raw = await getJson<{ timestamp: number; total_nodes: number; coordinates: [number, number][] }>(NODES_URL, 15000);
     const data: NodesSnapshot = { timestamp: raw.timestamp, totalNodes: raw.total_nodes, points: raw.coordinates };
-    state.gwNodes = { at: Date.now(), data };
-    return data;
+    // Don't replace a detailed snapshot with a bare one.
+    if (!state.gwNodes?.data.places) state.gwNodes = { at: Date.now(), data };
+    return state.gwNodes?.data ?? data;
   } catch {
     return c?.data ?? null;
   }
+}
+
+function refreshFullNodes() {
+  const f = (state.gwNodesFull ??= { at: 0 });
+  if (f.inflight || Date.now() - f.at < NODES_TTL_MS) return;
+  f.at = Date.now();
+  f.inflight = getJson<RawSnapshot>(NODES_FULL_URL, 120_000)
+    .then((raw) => {
+      if (raw?.nodes && Object.keys(raw.nodes).length > 0) state.gwNodes = { at: Date.now(), data: aggregateNodes(raw) };
+    })
+    .catch(() => {
+      f.at = Date.now() - NODES_TTL_MS + 10 * 60_000; // try again in about 10 minutes
+    })
+    .finally(() => {
+      delete f.inflight;
+    });
 }
 
 /**

@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LAND_PATH } from "@/lib/geo/land";
 import { classifyTx, type TxClass } from "@/lib/pulse/interest";
 import { btc } from "@/lib/pulse/format";
 import type { NodesSnapshot, PulseBlock, PulseTx } from "@/lib/pulse/types";
 import { palette, type Palette } from "@/lib/theme/theme";
+import { NodeCard, hitPlace, placeRadius, type PlaceHit } from "./node-card";
 import { ZoomControls, attachZoom, type ZoomApi } from "./zoom";
 
 const LAT_TOP = 80;
@@ -56,6 +57,11 @@ export function NetMap({
   // Zoom: screen = base * k + (tx, ty). k = 1 shows the whole world.
   const view = useRef({ k: 1, tx: 0, ty: 0 });
   const api = useRef<ZoomApi | null>(null);
+  // Places drawn in the last frame, for hover and tap.
+  const hits = useRef<PlaceHit[]>([]);
+  const [hover, setHover] = useState<PlaceHit | null>(null);
+  const hoverRef = useRef<PlaceHit | null>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -118,6 +124,21 @@ export function NetMap({
       pan: (dx, dy) => { view.current.tx += dx; view.current.ty += dy; clamp(); if (reduced) draw(); },
       canPan: () => view.current.k > 1.01,
     });
+    const pick = (e: PointerEvent | MouseEvent) => {
+      const r = c.getBoundingClientRect();
+      const h = hitPlace(hits.current, e.clientX - r.left, e.clientY - r.top);
+      if (h?.place !== hoverRef.current?.place) {
+        hoverRef.current = h;
+        setHover(h);
+        setBox({ w: c.clientWidth, h: c.clientHeight });
+      }
+    };
+    const onMove = (e: PointerEvent) => { if (e.pointerType === "mouse" && e.buttons === 0) pick(e); };
+    const onLeave = () => { hoverRef.current = null; setHover(null); };
+    const onTap = (e: MouseEvent) => pick(e);
+    c.addEventListener("pointermove", onMove);
+    c.addEventListener("pointerleave", onLeave);
+    c.addEventListener("click", onTap);
 
     const draw = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -198,6 +219,25 @@ export function NetMap({
         ctx.fillRect(x - 1.1 * ns, y - 1.1 * ns, 2.2 * ns, 2.2 * ns);
       }
 
+      // Places: remember where they are on screen, and ring the one under the cursor.
+      const frame: PlaceHit[] = [];
+      for (const pl of nodesRef.current?.places ?? []) {
+        const [x, y] = proj(pl.lat, pl.lng);
+        if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
+        frame.push({ x, y, r: placeRadius(pl.count), place: pl });
+      }
+      hits.current = frame;
+      const hv = hoverRef.current;
+      if (hv) {
+        const [x, y] = proj(hv.place.lat, hv.place.lng);
+        hv.x = x;
+        hv.y = y;
+        const rr = placeRadius(hv.place.count);
+        ctx.strokeStyle = `rgba(${P.accent},0.95)`;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x - rr, y - rr, rr * 2, rr * 2);
+      }
+
       // Relay arcs
       const list = arcs.current;
       for (let i = list.length - 1; i >= 0; i--) {
@@ -254,6 +294,9 @@ export function NetMap({
     const still = reduced ? setInterval(draw, 1000) : undefined;
     return () => {
       detach();
+      c.removeEventListener("pointermove", onMove);
+      c.removeEventListener("pointerleave", onLeave);
+      c.removeEventListener("click", onTap);
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       clearInterval(still);
@@ -263,6 +306,7 @@ export function NetMap({
   return (
     <>
       <canvas ref={canvas} className="gw-map-canvas" aria-label="Map of reachable Bitcoin nodes with live relay activity. Scroll or pinch to zoom, drag to move." role="img" />
+      {hover && <NodeCard hit={hover} w={box.w} h={box.h} />}
       <ZoomControls api={api} />
     </>
   );

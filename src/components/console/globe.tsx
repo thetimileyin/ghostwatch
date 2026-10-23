@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LAND_DOTS } from "@/lib/geo/land-dots";
 import { classifyTx, type TxClass } from "@/lib/pulse/interest";
 import { btc } from "@/lib/pulse/format";
 import type { NodesSnapshot, PulseBlock, PulseTx } from "@/lib/pulse/types";
 import { palette, type Palette } from "@/lib/theme/theme";
+import { NodeCard, hitPlace, placeRadius, type PlaceHit } from "./node-card";
 import { ZoomControls, attachZoom, type ZoomApi } from "./zoom";
 
 const RAD = Math.PI / 180;
@@ -49,12 +50,18 @@ export function Globe({
   const arcs = useRef<Arc[]>([]);
   const flash = useRef<{ at: number; label: string } | null>(null);
   const nodesRef = useRef<V3[]>([]);
+  const placesRef = useRef<{ v: V3; place: NonNullable<NodesSnapshot["places"]>[number] }[]>([]);
+  const hits = useRef<PlaceHit[]>([]);
+  const hoverRef = useRef<PlaceHit | null>(null);
+  const [hover, setHover] = useState<PlaceHit | null>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
   const zoom = useRef(1);
   const api = useRef<ZoomApi | null>(null);
   const rot = useRef({ lng: -20, lat: 22, drag: null as null | { x: number; y: number; lng: number; lat: number }, idleAt: 0 });
 
   useEffect(() => {
     nodesRef.current = (nodes?.points ?? []).map(([lat, lng]) => toV(lat, lng));
+    placesRef.current = (nodes?.places ?? []).map((place) => ({ v: toV(place.lat, place.lng), place }));
   }, [nodes]);
 
   useEffect(() => {
@@ -114,6 +121,22 @@ export function Globe({
       },
     });
     if (!zoomable) c.style.touchAction = "pan-y";
+    const pick = (e: PointerEvent | MouseEvent) => {
+      if (!zoomable) return;
+      const r = c.getBoundingClientRect();
+      const h = hitPlace(hits.current, e.clientX - r.left, e.clientY - r.top);
+      if (h?.place !== hoverRef.current?.place) {
+        hoverRef.current = h;
+        setHover(h);
+        setBox({ w: c.clientWidth, h: c.clientHeight });
+      }
+    };
+    const onMove = (e: PointerEvent) => { if (e.pointerType === "mouse" && e.buttons === 0) pick(e); };
+    const onLeave = () => { hoverRef.current = null; setHover(null); };
+    const onTap = (e: MouseEvent) => pick(e);
+    c.addEventListener("pointermove", onMove);
+    c.addEventListener("pointerleave", onLeave);
+    c.addEventListener("click", onTap);
 
     function draw() {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -128,7 +151,8 @@ export function Globe({
       const dt = t - last;
       last = t;
       const r = rot.current;
-      if (!reduced && !r.drag && t - r.idleAt > 1500) r.lng -= dt * 0.004;
+      // Auto-turn, except while dragging or while a place card is open.
+      if (!reduced && !r.drag && !hoverRef.current && t - r.idleAt > 1500) r.lng -= dt * 0.004;
 
       const R = Math.min(W, H) * 0.42 * zoom.current, cx = W / 2, cy = H / 2;
       // Land dots grow with zoom so continents stay solid instead of thinning out.
@@ -180,6 +204,28 @@ export function Globe({
         }
         ctx.fillStyle = `rgba(${P.fg},${0.7 * d})`;
         ctx.fillRect(x - 1.2, y - 1.2, 2.4, 2.4);
+      }
+
+      // Places on the near side: remember screen positions; ring the hovered one. The globe
+      // keeps turning, so the card follows its place until it rotates out of view.
+      if (zoomable) {
+        const frame: PlaceHit[] = [];
+        for (const { v, place } of placesRef.current) {
+          const [x, y, d] = proj(v);
+          if (d > 0.08) frame.push({ x, y, r: placeRadius(place.count), place });
+        }
+        hits.current = frame;
+        const hv = hoverRef.current;
+        if (hv) {
+          const now = frame.find((f) => f.place === hv.place);
+          if (!now) { hoverRef.current = null; setHover(null); }
+          else {
+            hv.x = now.x; hv.y = now.y;
+            ctx.strokeStyle = `rgba(${P.accent},0.95)`;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(now.x - now.r, now.y - now.r, now.r * 2, now.r * 2);
+          }
+        }
       }
 
       // Arcs
@@ -244,6 +290,9 @@ export function Globe({
     const still = reduced ? setInterval(draw, 1000) : undefined;
     return () => {
       detach();
+      c.removeEventListener("pointermove", onMove);
+      c.removeEventListener("pointerleave", onLeave);
+      c.removeEventListener("click", onTap);
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       clearInterval(still);
@@ -253,6 +302,7 @@ export function Globe({
   return (
     <>
       <canvas ref={canvas} className="gw-globe-canvas" role="img" aria-label={`Globe of reachable Bitcoin nodes with live relay activity. Drag to rotate${zoomable ? ", scroll or pinch to zoom" : ""}.`} />
+      {hover && <NodeCard hit={hover} w={box.w} h={box.h} />}
       {zoomable && <ZoomControls api={api} />}
     </>
   );

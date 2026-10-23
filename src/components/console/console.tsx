@@ -107,6 +107,7 @@ export function Console() {
           <Vitals pulse={pulse} nodes={nodes} day={day} now={now} />
           <CoinInspector pulse={pulse} now={now} />
           <Miners pulse={pulse} />
+          <Nodes nodes={nodes} />
         </aside>
 
         <main className="gw-center" id="main">
@@ -285,6 +286,40 @@ function CoinInspector({ pulse, now }: { pulse: Pulse | null; now: number }) {
               ))}
             </ol>
           )}
+        </>
+      )}
+    </Panel>
+  );
+}
+
+/**
+ * The reachable network in counts: where nodes are and what they run. Never individual
+ * nodes: GhostWatch shows places, not people.
+ */
+function Nodes({ nodes }: { nodes: NodesSnapshot | null }) {
+  const sum = nodes?.summary;
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  const bars = (list: { label: string; share: number }[]) =>
+    list.map((v) => (
+      <div key={v.label} className="rw rw--bar">
+        <span className="rw-l">{v.label}</span>
+        <span className="rw-bar" aria-hidden="true"><i style={{ width: pct(v.share) }} /></span>
+        <span className="rw-v num">{pct(v.share)}</span>
+      </div>
+    ));
+  return (
+    <Panel title="Nodes" meta={nodes ? `${compact(nodes.totalNodes)} reachable` : "…"}>
+      {!sum ? (
+        <p className="pn-empty">{nodes ? "Software and places are still loading. The map shows locations meanwhile." : "Loading…"}</p>
+      ) : (
+        <>
+          <Row label="Caught up" sub="at the latest block" value={pct(sum.synced)} />
+          <Row label="Over Tor" sub="no location, not on the map" value={compact(sum.tor)} />
+          <p className="nd-k">Software</p>
+          {bars(sum.versions)}
+          <p className="nd-k">Countries</p>
+          {bars(sum.countries)}
+          <p className="nd-k">Hover or tap a place on the map for its nodes.</p>
         </>
       )}
     </Panel>
