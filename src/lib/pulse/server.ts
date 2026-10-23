@@ -1,6 +1,7 @@
 import { readCache, writeCache } from "@/lib/db/cache";
 import { listEvents } from "@/lib/db/read";
 import { aggregateNodes, type RawSnapshot } from "./nodes";
+import { nodeAreas } from "@/lib/geo/areas";
 import type { NodesSnapshot, Pulse, PulseBlock, PulseNetwork, PulseTx } from "./types";
 
 const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
@@ -154,10 +155,11 @@ export async function getNodes(): Promise<NodesSnapshot | null> {
   if (c && c.data.points.length > 0 && Date.now() - c.at < NODES_TTL_MS) return c.data;
   try {
     const raw = await getJson<{ timestamp: number; total_nodes: number; coordinates: [number, number][] }>(NODES_URL, 15000);
-    const data: NodesSnapshot = { timestamp: raw.timestamp, totalNodes: raw.total_nodes, points: raw.coordinates };
-    // Keep any network summary we already have; refresh the map points.
+    const points = raw.coordinates;
+    const data: NodesSnapshot = { timestamp: raw.timestamp, totalNodes: raw.total_nodes, points, places: nodeAreas(points) };
+    // Keep any network summary we already have; refresh the map points and areas.
     const prev = state.gwNodes?.data;
-    const merged: NodesSnapshot = prev?.summary ? { ...data, summary: prev.summary, places: prev.places } : data;
+    const merged: NodesSnapshot = prev?.summary ? { ...data, summary: prev.summary } : data;
     state.gwNodes = { at: Date.now(), data: merged };
     void writeCache(NODES_KEY, merged);
     return merged;
@@ -186,7 +188,7 @@ function refreshFullNodes() {
         // map points from the coordinates feed and take only what the full snapshot really has.
         const prev = state.gwNodes?.data;
         const data: NodesSnapshot =
-          full.points.length > 0 ? full : { ...(prev ?? full), totalNodes: full.totalNodes, summary: full.summary, places: prev?.places };
+          full.points.length > 0 ? full : { ...(prev ?? full), totalNodes: full.totalNodes, summary: full.summary, places: prev?.places ?? nodeAreas(prev?.points ?? []) };
         if (data.points.length === 0 && !prev) return; // nothing to draw yet; don't cache an empty map
         state.gwNodes = { at: Date.now(), data };
         void writeCache(NODES_KEY, data);

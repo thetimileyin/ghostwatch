@@ -356,7 +356,7 @@ function Nodes({ nodes, down }: { nodes: NodesSnapshot | null; down: boolean }) 
               {bars(sum.countries)}
             </>
           )}
-          {nodes?.places?.length ? <p className="nd-k">Hover or tap a place on the map for its nodes.</p> : null}
+          {nodes?.places?.length ? <p className="nd-k">Hover or tap an area on the map for its node count.</p> : null}
         </>
       )}
     </Panel>

@@ -93,12 +93,15 @@ export interface NodeShare {
 export interface NodePlace {
   lat: number;
   lng: number;
-  /** "Frankfurt, DE", or just the country code when the city is unknown. */
+  /** "Near Frankfurt, DE" (nearest major city to the area's nodes), or a coordinate cell. */
   name: string;
   count: number;
-  versions: NodeShare[];
-  /** Fraction of these nodes at or within 2 blocks of the snapshot's best height. */
-  synced: number;
+  /** Fraction of all mapped nodes that are in this area. */
+  share?: number;
+  /** Software in this area, when the source publishes it per node (it no longer does). */
+  versions?: NodeShare[];
+  /** Fraction of these nodes at or within 2 blocks of the snapshot's best height, when known. */
+  synced?: number;
 }
 
 export interface NodeSummary {
