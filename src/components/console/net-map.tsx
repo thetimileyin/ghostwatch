@@ -6,6 +6,7 @@ import { classifyTx, type TxClass } from "@/lib/pulse/interest";
 import { btc } from "@/lib/pulse/format";
 import type { NodesSnapshot, PulseBlock, PulseTx } from "@/lib/pulse/types";
 import { palette, type Palette } from "@/lib/theme/theme";
+import { ZoomControls, attachZoom, type ZoomApi } from "./zoom";
 
 const LAT_TOP = 80;
 const LAT_BOTTOM = -58;
@@ -52,6 +53,9 @@ export function NetMap({
   const arcs = useRef<Arc[]>([]);
   const flash = useRef<{ at: number; label: string } | null>(null);
   const nodesRef = useRef(nodes);
+  // Zoom: screen = base * k + (tx, ty). k = 1 shows the whole world.
+  const view = useRef({ k: 1, tx: 0, ty: 0 });
+  const api = useRef<ZoomApi | null>(null);
 
   useEffect(() => {
     nodesRef.current = nodes;
@@ -84,6 +88,36 @@ export function NetMap({
     const land = cells();
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
+    const MAX_K = 10;
+    const clamp = () => {
+      const v = view.current, W = c.clientWidth, H = c.clientHeight;
+      v.k = Math.max(1, Math.min(MAX_K, v.k));
+      v.tx = Math.min(0, Math.max(W - W * v.k, v.tx));
+      v.ty = Math.min(0, Math.max(H - H * v.k, v.ty));
+      // Unzoomed: let a finger scroll the page vertically. Zoomed: every drag pans the map.
+      c.style.touchAction = v.k > 1.01 ? "none" : "pan-y";
+      c.style.cursor = v.k > 1.01 ? "grab" : "zoom-in";
+    };
+    const zoomAt = (f: number, x: number, y: number) => {
+      const v = view.current;
+      const k = Math.max(1, Math.min(MAX_K, v.k * f));
+      v.tx = x - ((x - v.tx) * k) / v.k;
+      v.ty = y - ((y - v.ty) * k) / v.k;
+      v.k = k;
+      clamp();
+      if (reduced) draw();
+    };
+    api.current = {
+      zoomIn: () => zoomAt(1.6, c.clientWidth / 2, c.clientHeight / 2),
+      zoomOut: () => zoomAt(1 / 1.6, c.clientWidth / 2, c.clientHeight / 2),
+      reset: () => { view.current = { k: 1, tx: 0, ty: 0 }; clamp(); if (reduced) draw(); },
+    };
+    clamp();
+    const detach = attachZoom(c, {
+      zoom: zoomAt,
+      pan: (dx, dy) => { view.current.tx += dx; view.current.ty += dy; clamp(); if (reduced) draw(); },
+      canPan: () => view.current.k > 1.01,
+    });
 
     const draw = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -100,32 +134,38 @@ export function NetMap({
       const mw = Math.min(W * 0.98, (H * 0.94 * 360) / SPAN_Y);
       const mh = (mw * SPAN_Y) / 360;
       const ox = (W - mw) / 2, oy = (H - mh) / 2;
-      const proj = (lat: number, lng: number): [number, number] => [ox + ((lng + 180) / 360) * mw, oy + ((LAT_TOP - lat) / SPAN_Y) * mh];
+      const { k: zk, tx, ty } = view.current;
+      const proj = (lat: number, lng: number): [number, number] => [(ox + ((lng + 180) / 360) * mw) * zk + tx, (oy + ((LAT_TOP - lat) / SPAN_Y) * mh) * zk + ty];
+      // Nodes grow a little when zoomed so they stay findable, but never into blobs.
+      const ns = Math.min(2, Math.sqrt(zk));
 
       const P = palette();
       // Graticule
       ctx.strokeStyle = `rgba(${P.fg},${P.dark ? 0.06 : 0.09})`;
       ctx.lineWidth = 1;
       ctx.beginPath();
+      const [gx0, gy0] = proj(LAT_TOP, -180);
+      const [gx1, gy1] = proj(LAT_BOTTOM, 180);
       for (let lng = -180; lng <= 180; lng += 30) {
         const [x] = proj(0, lng);
-        ctx.moveTo(x, oy);
-        ctx.lineTo(x, oy + mh);
+        ctx.moveTo(x, gy0);
+        ctx.lineTo(x, gy1);
       }
       for (let lat = -30; lat <= 60; lat += 30) {
         const [, y] = proj(lat, 0);
-        ctx.moveTo(ox, y);
-        ctx.lineTo(ox + mw, y);
+        ctx.moveTo(gx0, y);
+        ctx.lineTo(gx1, y);
       }
       ctx.stroke();
 
       // Land: square pixels
-      const cell = (CELL / 360) * mw;
+      const cell = (CELL / 360) * mw * zk;
       const sq = Math.max(1, cell * 0.62);
       // Light mode needs darker land: pale pixels on an off-white sheet washed out.
       ctx.fillStyle = `rgba(${P.fg},${P.dark ? 0.16 : 0.26})`;
       for (const [lat, lng] of land) {
         const [x, y] = proj(lat, lng);
+        if (x < -sq || y < -sq || x > W + sq || y > H + sq) continue;
         ctx.fillRect(x - sq / 2, y - sq / 2, sq, sq);
       }
 
@@ -155,7 +195,7 @@ export function NetMap({
       for (const [lat, lng] of pts) {
         if (lat < LAT_BOTTOM || lat > LAT_TOP) continue;
         const [x, y] = proj(lat, lng);
-        ctx.fillRect(x - 1.1, y - 1.1, 2.2, 2.2);
+        ctx.fillRect(x - 1.1 * ns, y - 1.1 * ns, 2.2 * ns, 2.2 * ns);
       }
 
       // Relay arcs
@@ -213,11 +253,17 @@ export function NetMap({
     // Reduced motion: no animation loop, but repaint once a second so late data and theme changes still show.
     const still = reduced ? setInterval(draw, 1000) : undefined;
     return () => {
+      detach();
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
       clearInterval(still);
     };
   }, []);
 
-  return <canvas ref={canvas} className="gw-map-canvas" aria-label="Map of reachable Bitcoin nodes with live relay activity" role="img" />;
+  return (
+    <>
+      <canvas ref={canvas} className="gw-map-canvas" aria-label="Map of reachable Bitcoin nodes with live relay activity. Scroll or pinch to zoom, drag to move." role="img" />
+      <ZoomControls api={api} />
+    </>
+  );
 }

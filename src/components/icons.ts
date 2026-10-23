@@ -29,3 +29,6 @@ export { default as CaretDownIcon } from "@mingcute/react/core-filled/down-small
 export { default as BookIcon } from "@mingcute/react/core-regular/book-2";
 export { default as TrendUpIcon } from "@mingcute/react/core-regular/trending-up";
 export { default as TrendDownIcon } from "@mingcute/react/core-regular/trending-down";
+export { default as ZoomInIcon } from "@mingcute/react/core-regular/zoom-in";
+export { default as ZoomOutIcon } from "@mingcute/react/core-regular/zoom-out";
+export { default as ResetViewIcon } from "@mingcute/react/core-regular/aiming-2";

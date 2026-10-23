@@ -31,7 +31,7 @@ export function LandingLive() {
   return (
     <div className="lx-scene" aria-label="Bitcoin's network, live">
       <div className="lx-globe" aria-hidden="true">
-        <Globe nodes={nodes} newTxs={live.newTxs} newBlock={live.newBlock} fastestFee={p?.fees?.fastest ?? null} labels={false} />
+        <Globe nodes={nodes} newTxs={live.newTxs} newBlock={live.newBlock} fastestFee={p?.fees?.fastest ?? null} labels={false} zoomable={false} />
       </div>
 
       <span className="lx-tag" style={{ left: "47%", top: "16%" }} aria-hidden="true">[01]</span>
