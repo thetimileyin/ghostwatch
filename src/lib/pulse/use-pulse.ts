@@ -72,7 +72,13 @@ export function usePulse() {
       setError(false);
       if (!initial && unseen.length) setNewTxs((n) => ({ batch: n.batch + 1, txs: unseen }));
       if (initial) setNewTxs({ batch: 1, txs: p.txs });
-      if (fresh.length) setEvents((prev) => [...fresh, ...prev].sort((a, b) => b.at - a.at).slice(0, MAX_EVENTS));
+      if (fresh.length)
+        setEvents((prev) => {
+          // Overlapping polls can report the same block twice; keep one event per key.
+          const have = new Set(prev.map((e) => e.key));
+          const add = fresh.filter((e) => !have.has(e.key) && have.add(e.key));
+          return add.length ? [...add, ...prev].sort((a, b) => b.at - a.at).slice(0, MAX_EVENTS) : prev;
+        });
     } catch {
       setError(true);
     }
