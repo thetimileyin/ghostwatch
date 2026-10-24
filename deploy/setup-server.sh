@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup for a fresh Ubuntu 24.04 server (run as root).
+# One-time setup for a fresh Ubuntu server, 24.04 or newer (run as root).
 # Installs Postgres, Node 22, Caddy (automatic HTTPS), a firewall and automatic security updates,
 # creates the `ghost` service user and database, and installs the systemd services.
 # Safe to re-run: every step checks before it changes anything.
@@ -28,9 +28,11 @@ if ! command -v caddy >/dev/null; then
   apt-get update -q && apt-get install -yq caddy
 fi
 
-# 2 GB swap so builds never run out of memory on a 4 GB server.
+# Swap so builds never run out of memory: 4 GB on small (2 GB) servers, 2 GB otherwise.
 if ! swapon --show | grep -q /swapfile; then
-  fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
+  MEM_MB=$(awk '/MemTotal/ {print int($2/1024)}' /proc/meminfo)
+  SWAP=2G; [ "$MEM_MB" -lt 3000 ] && SWAP=4G
+  fallocate -l "$SWAP" /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile
   grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
 fi
 
