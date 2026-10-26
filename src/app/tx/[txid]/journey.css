@@ -1,7 +1,7 @@
 /* ───────── A transaction's journey ─────────
    Builds on the story layout (story.css). Someone arrives here from a search, so the
    opening is compact and the first chapter is in view straight away. No glow. */
-.jr .st-hero { min-height: 0; padding-block: 56px 32px; }
+.jr .st-hero { min-height: 0; padding-block: 28px 32px; }
 .jr .st-hero h1 { font-size: clamp(32px, 5vw, 60px); }
 .jr .st-hero h1 .num { text-shadow: none; }
 .jr .st-span-bar i { box-shadow: none; }

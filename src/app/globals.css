@@ -199,6 +199,8 @@ a { color: inherit; }
 .pg-top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--void) 86%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .pg-top-in { display: flex; align-items: center; gap: 12px 24px; padding-block: 12px; }
 .pg-top .brand { margin-right: auto; color: var(--fg); }
+.pg-tools { display: flex; align-items: center; gap: 8px; }
+.pg-crumb { padding-top: 20px; }
 .pg-back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); text-decoration: none; }
 .pg-back svg { width: 14px; height: 14px; }
 .pg-back:hover { color: var(--fg); }

@@ -3,7 +3,7 @@
    process strip, generous type. */
 .ab { min-height: 100dvh; background-color: var(--void); }
 .ab-idx { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-3); margin: 0; }
-.ab-hero { padding-block: 96px 72px; }
+.ab-hero { padding-block: 56px 72px; }
 .ab-hero h1 { font-size: clamp(36px, 5.4vw, 68px); line-height: 1.02; letter-spacing: -0.045em; font-weight: 500; margin: 18px 0 0; text-wrap: balance; }
 .ab-hero h1 .dim { color: var(--fg-3); }
 .ab-lede { max-width: 60ch; margin: 28px 0 0; font-size: 18px; line-height: 1.6; color: var(--fg-2); }
