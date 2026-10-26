@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { addressType, normalizeAddress } from "@/lib/journey/address";
 import { isTxid } from "@/lib/journey/journey";
 import { ArrowRightIcon, GhostIcon, SearchIcon } from "./icons";
@@ -177,7 +178,9 @@ export function SearchButton({ className = "" }: { className?: string }) {
       <button type="button" className={`txs-btn ${className}`} onClick={() => setOpen(true)} aria-label="Search a transaction, address or block (press /)" title="Search (/)">
         <SearchIcon aria-hidden />
       </button>
-      {open && <SearchDialog onClose={() => setOpen(false)} />}
+      {/* Rendered at the end of <body>, not inside the header: the top bar measures its own
+          contents to decide whether it fits on one row, and must never count the dialog. */}
+      {open && createPortal(<SearchDialog onClose={() => setOpen(false)} />, document.body)}
     </>
   );
 }

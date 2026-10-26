@@ -175,7 +175,7 @@ export function Console() {
               )}
               <span className="gw-tabs-hint">
                 {tab === "map" && !nodes && nodesDown
-                  ? "Node locations are unavailable right now: the public source isn't answering. Retrying every minute."
+                  ? "Node map unavailable. Retrying every minute."
                   : tab === "map"
                   ? view === "simple"
                     ? "Where Bitcoin's nodes are. Lines show transactions spreading."
@@ -414,7 +414,7 @@ function PriceAndFees({ pulse, onTrends }: { pulse: Pulse | null; onTrends: () =
   const tiles: { k: string; v: string; s?: string; tone?: "up" | "down" | "hot" }[] = [
     { k: "Bitcoin", v: usd(price), s: ch != null ? `${ch >= 0 ? "+" : "−"}${Math.abs(ch * 100).toFixed(2)}% in 24h` : "", tone: ch == null ? undefined : ch >= 0 ? "up" : "down" },
     { k: view === "simple" ? "$1 buys" : "Sats per dollar", v: price ? Math.round(1e8 / price).toLocaleString("en-US") : "—", s: "sats" },
-    { k: view === "simple" ? "Next-block fee" : "Fastest", v: pulse?.fees ? satvb(pulse.fees.fastest) : "—", s: pulse?.fees ? `within an hour: ${satvb(pulse.fees.hour)}` : "", tone: (pulse?.fees?.fastest ?? 0) >= 20 ? "hot" : undefined },
+    { k: view === "simple" ? "Next-block fee" : "Fastest", v: pulse?.fees ? satvb(pulse.fees.fastest) : "—", s: pulse?.fees ? `within an hour: ${pulse.fees.hour.toFixed(1)}` : "", tone: (pulse?.fees?.fastest ?? 0) >= 20 ? "hot" : undefined },
     { k: view === "simple" ? "Queue size" : "Mempool", v: pulse?.mempool ? `${(pulse.mempool.vsize / 1e6).toFixed(1)} vMB` : "—", s: pulse?.mempool ? `${btc(pulse.mempool.totalFee)} in fees` : "" },
     { k: view === "simple" ? "Mining power" : "Hashrate", v: pulse?.network.hashrateEh ? `${Math.round(pulse.network.hashrateEh)} EH/s` : "—", s: pulse?.network.difficulty ? `difficulty ${compact(pulse.network.difficulty)}` : "" },
     { k: "Lightning", v: pulse?.network.lightning ? btc(pulse.network.lightning.capacitySats) : "—", s: pulse?.network.lightning ? `${compact(pulse.network.lightning.nodes)} nodes` : "" },
@@ -463,9 +463,10 @@ export function ChainLog({ events, now, price, limit = 30 }: { events: LiveEvent
             let text = "", sub = "", href = "", external = true;
             if (e.kind === "block") {
               const b = e.block;
-              text = view === "simple" ? `Block added${b.pool ? ` by ${b.pool}` : ""}` : `${b.height.toLocaleString("en-US")} · ${b.pool ?? "unknown"}`;
-              sub = view === "simple" ? `${b.txCount.toLocaleString("en-US")} transactions confirmed` : `${b.txCount.toLocaleString("en-US")} tx · ${btc(b.totalFees)} fees · median ${satvb(b.medianFee)}`;
-              href = `https://mempool.space/block/${b.hash}`;
+              text = view === "simple" ? (b.pool ? `Block by ${b.pool}` : "New block") : `${b.height.toLocaleString("en-US")} · ${b.pool ?? "unknown"}`;
+              sub = view === "simple" ? `${b.txCount.toLocaleString("en-US")} transactions` : `${b.txCount.toLocaleString("en-US")} tx · median ${satvb(b.medianFee)}`;
+              href = `/block/${b.height}`;
+              external = false;
             } else if (e.kind === "ghost") {
               const g = e.ghost;
               text = `${btc(g.dormantSats)} from ${monthYear(g.oldestCreatedTime)}`;
@@ -476,7 +477,8 @@ export function ChainLog({ events, now, price, limit = 30 }: { events: LiveEvent
               const t = e.tx;
               text = view === "simple" ? CLASS_COPY[e.cls].simple : short(t.txid, 6);
               sub = view === "simple" ? `${btc(t.value)}${price ? ` · ${usd((t.value / 1e8) * price)}` : ""}` : `outputs ${btc(t.value)} · ${satvb(t.feeRate)} · ${t.vsize} vB`;
-              href = `https://mempool.space/tx/${t.txid}`;
+              href = `/tx/${t.txid}`;
+              external = false;
             }
             const body = (
               <>

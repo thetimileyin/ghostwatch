@@ -17,8 +17,9 @@ export function classifyTx(t: PulseTx, fastestFee: number | null): TxClass {
 }
 
 export const CLASS_COPY: Record<TxClass, { simple: string; tag: string }> = {
-  whale: { simple: "A very large amount is moving", tag: "100+ BTC" },
-  large: { simple: "A large amount is moving", tag: "10+ BTC" },
-  rush: { simple: "Someone paid extra to get in faster", tag: "High fee" },
-  regular: { simple: "A payment was broadcast", tag: "Tx" },
+  // Short enough to fit the chain log without cutting off; the tag beside it carries the detail.
+  whale: { simple: "Very large transfer", tag: "100+ BTC" },
+  large: { simple: "Large transfer", tag: "10+ BTC" },
+  rush: { simple: "Paid to jump the queue", tag: "High fee" },
+  regular: { simple: "A payment was sent", tag: "Tx" },
 };
