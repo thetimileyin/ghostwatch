@@ -532,7 +532,7 @@ body:has(.gw) footer.foot, body:has(.gwx) footer.foot { display: none; }
 .gwx-fc .gw-tablist button { padding: 6px 4px; min-height: 36px; }
 
 /* While a sheet or the field guide is open, the page behind it stays put. */
-html:has(dialog[open]), html:has(dialog[open]) body { overflow: hidden; overscroll-behavior: none; }
+html:has(dialog[open]) body { overscroll-behavior: none; } /* lock and width kept in globals.css */
 
 /* Preview sheet (phones and tablets): slides up from the bottom over a blurred backdrop. */
 .gwx-sheet { position: fixed; inset: auto 0 0 0; width: 100%; max-width: 640px; max-height: 86dvh; margin: 0 auto; padding: 0; border: 1px solid var(--line-3); border-bottom: 0; background: var(--ink-2); color: var(--fg); overflow: hidden; }

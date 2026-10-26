@@ -104,9 +104,11 @@
 }
 
 /* ───────── Base ───────── */
-/* Keep the scrollbar's space even when a dialog locks scrolling, so the page never changes width
-   (the top bar re-fits itself to its width and would visibly rearrange). */
-html { background: var(--void); scrollbar-gutter: stable; }
+html { background: var(--void); }
+/* A dialog locks page scrolling; its scrollbar's width (--sbw, set in the layout) comes back as
+   padding so the page keeps its width and the top bar doesn't re-fit and jump. */
+html:has(dialog[open]) { overflow: hidden; padding-right: var(--sbw, 0px); }
+html:has(dialog[open]) body { overflow: hidden; }
 body {
   margin: 0;
   min-height: 100dvh;
@@ -424,7 +426,6 @@ footer.foot a:hover { color: var(--fg); }
 .txs-dialog::backdrop { background: color-mix(in srgb, var(--void) 55%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .txs-dialog[open] { animation: txs-in 160ms var(--ease-out); }
 @keyframes txs-in { from { opacity: 0; transform: translateY(-6px); } }
-html:has(.txs-dialog[open]), html:has(.txs-dialog[open]) body { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .txs-dialog[open] { animation: none; } }
 
 /* Search box (dialog and inline): input, one live result or suggestions, keyboard footer. */
