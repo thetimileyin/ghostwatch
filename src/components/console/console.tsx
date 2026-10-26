@@ -16,9 +16,11 @@ import { DotChart } from "./dot-chart";
 import { FieldGuide } from "./field-guide";
 import { Globe } from "./globe";
 import { NetMap } from "./net-map";
+import { PriceTrends } from "./price-trends";
+import { ChartLineIcon } from "../icons";
 
 const TYPICAL_VB = 140;
-type Tab = "map" | "blocks" | "dial";
+type Tab = "map" | "blocks" | "dial" | "price";
 
 /** Nodes snapshot and ~24h of blocks, shared by the terminal views. */
 export function useNetworkContext(tipHeight: number | undefined) {
@@ -144,6 +146,7 @@ export function Console() {
                     ["map", "Network"],
                     ["blocks", "Blocks"],
                     ["dial", "Last 24 hours"],
+                    ["price", "Price"],
                   ] as const
                 ).map(([k, label]) => (
                   <button key={k} role="tab" type="button" aria-selected={tab === k} onClick={() => setTab(k)}>
@@ -169,7 +172,11 @@ export function Console() {
                     : `${nodes ? nodes.totalNodes.toLocaleString("en-US") : "…"} reachable nodes · arcs: sampled tx, random endpoints`
                   : tab === "blocks"
                     ? "Waiting blocks on the left, mined blocks on the right"
-                    : "Every block from the last 24 hours"}
+                    : tab === "price"
+                      ? view === "simple"
+                        ? "Bitcoin's price since July 2010, where the record starts"
+                        : "Daily close in USD since 19 Jul 2010 · source: mempool.space"
+                      : "Every block from the last 24 hours"}
               </span>
             </div>
             <div className="gw-stage-body">
@@ -177,6 +184,7 @@ export function Console() {
               {tab === "map" && projection === "globe" && <Globe nodes={nodes} newTxs={live.newTxs} newBlock={live.newBlock} fastestFee={pulse?.fees?.fastest ?? null} />}
               {tab === "blocks" && <MachineFloor pulse={pulse} newTxs={live.newTxs} newBlock={live.newBlock} now={now} />}
               {tab === "dial" && <Dial pulse={pulse} day={day} now={now} />}
+              {tab === "price" && <PriceTrends live={pulse?.priceUsd ?? null} />}
             </div>
             {tab === "map" && (
               <div className="gw-legend" aria-label="Legend">
@@ -191,7 +199,7 @@ export function Console() {
           </section>
           <div className="gw-lower">
             <PassingThrough pulse={pulse} now={now} />
-            <PriceAndFees pulse={pulse} />
+            <PriceAndFees pulse={pulse} onTrends={() => { setTab("price"); document.getElementById("main")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
           </div>
         </main>
 
@@ -387,7 +395,7 @@ function PassingThrough({ pulse, now }: { pulse: Pulse | null; now: number }) {
   );
 }
 
-function PriceAndFees({ pulse }: { pulse: Pulse | null }) {
+function PriceAndFees({ pulse, onTrends }: { pulse: Pulse | null; onTrends: () => void }) {
   const view = useView();
   const price = pulse?.priceUsd ?? null;
   const past = pulse?.network.price24hAgo ?? null;
@@ -405,7 +413,13 @@ function PriceAndFees({ pulse }: { pulse: Pulse | null }) {
       <div className="mk">
         {tiles.map((t) => (
           <div key={t.k} className={`mk-t${t.tone === "hot" ? " mk-t--hot" : ""}`}>
-            <div className="mk-k">{t.k}</div>
+            {t.k === "Bitcoin" ? (
+              <button type="button" className="mk-k mk-link" onClick={onTrends} aria-label="Bitcoin price: open price history">
+                Bitcoin <ChartLineIcon size={12} aria-hidden="true" />
+              </button>
+            ) : (
+              <div className="mk-k">{t.k}</div>
+            )}
             <div className="mk-v num">{t.v}</div>
             {t.k === "Bitcoin" && ch != null ? (
               <div className="mk-s"><ChangeChip change={ch} suffix="24h" /></div>

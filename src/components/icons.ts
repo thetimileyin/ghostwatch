@@ -32,3 +32,4 @@ export { default as TrendDownIcon } from "@mingcute/react/core-regular/trending-
 export { default as ZoomInIcon } from "@mingcute/react/core-regular/zoom-in";
 export { default as ZoomOutIcon } from "@mingcute/react/core-regular/zoom-out";
 export { default as ResetViewIcon } from "@mingcute/react/core-regular/aiming-2";
+export { default as ChartLineIcon } from "@mingcute/react/core-regular/chart-line";
