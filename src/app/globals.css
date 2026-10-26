@@ -409,3 +409,25 @@ footer.foot a:hover { color: var(--fg); }
   *, *::before, *::after { animation: none !important; transition-property: opacity, color, background-color, border-color !important; scroll-behavior: auto !important; }
 }
 
+
+/* Follow a transaction: header button, dialog and form (sharp edges, one accent). */
+.txs-btn { display: inline-grid; place-items: center; width: 30px; height: 30px; flex: none; padding: 0; border: 1px solid var(--line-2); background: none; color: var(--fg-2); cursor: pointer; transition: color 120ms ease, border-color 120ms ease, transform 120ms var(--ease-out); }
+.txs-btn:active { transform: scale(0.94); }
+.txs-btn:hover { color: var(--fg); border-color: var(--fg-3); }
+.txs-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.txs-btn svg { width: 15px; height: 15px; }
+.txs-dialog { width: min(560px, calc(100vw - 32px)); margin: 12vh auto 0; padding: 18px 18px 14px; border: 1px solid var(--line-3); background: var(--ink-2); color: var(--fg); }
+.txs-dialog::backdrop { background: color-mix(in srgb, var(--void) 55%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.txs-dialog[open] { animation: txs-in 160ms var(--ease-out); }
+@keyframes txs-in { from { opacity: 0; transform: translateY(-6px); } }
+html:has(.txs-dialog[open]), html:has(.txs-dialog[open]) body { overflow: hidden; }
+.txs-l { display: block; margin-bottom: 8px; font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); }
+.txs-row { display: flex; gap: 8px; }
+.txs-in { flex: 1; min-width: 0; height: 42px; padding: 0 12px; border: 1px solid var(--line-3); background: var(--void); color: var(--fg); font-family: var(--font-mono); font-size: 14px; }
+.txs-in::placeholder { color: var(--fg-4); }
+.txs-in:focus { outline: none; border-color: var(--fg-2); }
+.txs-go { height: 42px; padding: 0 16px; border: 0; background: var(--fg); color: var(--void); font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.txs-go:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.txs-msg { margin: 8px 0 0; min-height: 1.4em; font-size: 12.5px; color: var(--fg-3); }
+.txs-msg--warn { color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .txs-dialog[open] { animation: none; } }

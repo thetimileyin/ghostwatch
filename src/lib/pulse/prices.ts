@@ -109,3 +109,17 @@ export const HALVINGS: { height: number; day: number; reward: string }[] = [
   { height: 630_000, day: Math.floor(Date.UTC(2020, 4, 11) / 1000 / DAY), reward: "6.25 BTC" },
   { height: 840_000, day: Math.floor(Date.UTC(2024, 3, 20) / 1000 / DAY), reward: "3.125 BTC" },
 ];
+
+/** Closing price on the day of `unix` (seconds), or null before the record starts (July 2010). */
+export function priceOnDay(h: PriceHistory | null, unix: number): number | null {
+  if (!h || h.days.length === 0) return null;
+  const day = Math.floor(unix / DAY);
+  if (day < h.days[0]) return null;
+  let lo = 0, hi = h.days.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (h.days[mid] <= day) lo = mid;
+    else hi = mid - 1;
+  }
+  return h.usd[lo];
+}

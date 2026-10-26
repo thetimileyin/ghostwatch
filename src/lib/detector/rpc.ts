@@ -30,6 +30,43 @@ export class BitcoinRpc {
     throw lastErr;
   }
 
+  /** Several calls in one request (JSON-RPC batch), in order. Any failed call fails the batch. */
+  async batch<T>(calls: [method: string, params: unknown[]][]): Promise<T[]> {
+    if (calls.length === 0) return [];
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < this.urls.length; attempt++) {
+      const url = this.urls[(this.next + attempt) % this.urls.length];
+      try {
+        const body = await this.send<{ id: number; result: T; error: { message: string } | null }[]>(
+          url,
+          calls.map(([method, params], id) => ({ jsonrpc: "1.0", id, method, params })),
+        );
+        const byId = new Map(body.map((r) => [r.id, r]));
+        return calls.map(([method], id) => {
+          const r = byId.get(id);
+          if (!r || r.error) throw new Error(`${method}: ${r?.error?.message ?? "missing result"}`);
+          return r.result;
+        });
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr;
+  }
+
+  private async send<T>(rawUrl: string, payload: unknown): Promise<T> {
+    const u = new URL(rawUrl);
+    const headers: Record<string, string> = { "content-type": "application/json" };
+    if (u.username) {
+      headers.authorization = "Basic " + Buffer.from(`${decodeURIComponent(u.username)}:${decodeURIComponent(u.password)}`).toString("base64");
+      u.username = "";
+      u.password = "";
+    }
+    const res = await fetch(u, { method: "POST", headers, body: JSON.stringify(payload), signal: AbortSignal.timeout(this.timeoutMs) });
+    if (!res.ok && res.status !== 500) throw new Error(`batch via ${u.host}: HTTP ${res.status}`);
+    return (await res.json()) as T;
+  }
+
   private async post<T>(rawUrl: string, method: string, params: unknown[]): Promise<T> {
     const u = new URL(rawUrl);
     const headers: Record<string, string> = { "content-type": "application/json" };

@@ -435,7 +435,7 @@
   .mk-t:not(:nth-child(3n + 1)) { padding-left: 0; border-left: 0; }
   .mk-t:nth-child(2n) { padding-left: 12px; border-left: 1px solid var(--line); }
   .cb-nav, .cb-r .seg, .cb-r .cb-guide { display: none; }
-  .cb-r .theme-btn { width: 40px; height: 40px; }
+  .cb-r .theme-btn, .cb-r .txs-btn { width: 40px; height: 40px; }
   .cb-r .cb-alert { min-height: 40px; gap: 6px; }
   .cb-alert-l { display: none; }
   .cb-alert-i { display: block; }

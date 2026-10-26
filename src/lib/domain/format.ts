@@ -48,6 +48,30 @@ export function durationLong(fromUnix: number, toUnix: number): string {
   return `${y} and ${m}`;
 }
 
+const unit = (k: number, one: string) => `${k} ${one}${k === 1 ? "" : "s"}`;
+
+/** Any span in plain words: "40 minutes", "5 hours", "12 days", "4 months", "6 years and 8 months". */
+export function spanWords(fromUnix: number, toUnix: number): string {
+  const sec = Math.max(0, toUnix - fromUnix);
+  if (sec < 3600) return unit(Math.max(1, Math.round(sec / 60)), "minute");
+  if (sec < 86_400) return unit(Math.round(sec / 3600), "hour");
+  if (sec < 60 * 86_400) return unit(Math.round(sec / 86_400), "day");
+  const s = calendarSpan(fromUnix, toUnix);
+  if (s.years === 0) return unit(s.months, "month");
+  return durationLong(fromUnix, toUnix);
+}
+
+/** Any age, compact: "14y 2m", "4m 3d", "12d", "5h", "40min". Zero parts are dropped. */
+export function ageCompact(fromUnix: number, toUnix: number): string {
+  const sec = Math.max(0, toUnix - fromUnix);
+  if (sec < 3600) return `${Math.max(1, Math.round(sec / 60))}min`;
+  if (sec < 86_400) return `${Math.round(sec / 3600)}h`;
+  const s = calendarSpan(fromUnix, toUnix);
+  if (s.years > 0) return s.months ? `${s.years}y ${s.months}m` : `${s.years}y`;
+  if (s.months > 0) return s.days ? `${s.months}m ${s.days}d` : `${s.months}m`;
+  return `${s.days}d`;
+}
+
 const monthYearFmt = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
 const dateFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 const dateTimeFmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" });

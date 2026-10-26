@@ -45,3 +45,13 @@ describe("roundPrice", () => {
     expect(roundPrice(0.085841)).toBe(0.0858);
   });
 });
+
+describe("priceOnDay", () => {
+  it("finds the latest close on or before a day", async () => {
+    const { priceOnDay, summarizePrices } = await import("./prices");
+    const h = summarizePrices([{ time: Date.UTC(2020, 0, 1) / 1000, USD: 7000 }, { time: Date.UTC(2020, 0, 10) / 1000, USD: 8000 }])!;
+    expect(priceOnDay(h, Date.UTC(2020, 0, 5) / 1000)).toBe(7000);
+    expect(priceOnDay(h, Date.UTC(2020, 0, 10, 23) / 1000)).toBe(8000);
+    expect(priceOnDay(h, Date.UTC(2019, 0, 1) / 1000)).toBeNull();
+  });
+});

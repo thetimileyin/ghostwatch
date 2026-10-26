@@ -12,6 +12,7 @@ import { ChangeChip } from "../change-chip";
 import { ArrowRightIcon, BookIcon, GhostIcon } from "../icons";
 import { MobileMenu } from "../mobile-menu";
 import { ThemeSwitch } from "../theme-switch";
+import { SearchButton } from "../tx-search";
 import { Wordmark } from "../wordmark";
 
 export type Area = "terminal" | "feed" | "archive";
@@ -201,6 +202,7 @@ export function ChainBar({
           <GhostIcon className="cb-alert-i" aria-hidden />
           <span className="cb-alert-l">Old coins ·</span> <b className="num">{woke}</b>
         </Link>
+        <SearchButton />
         <ThemeSwitch />
       </div>
 

@@ -12,6 +12,7 @@ import {
   btcShort, dateShort, dateTimeUtc, durationLong, durationShort, heightLabel, isoDate, middleTruncate, monthYear, satsLabel, satsToBtcString,
 } from "@/lib/domain/format";
 import { blockAt, priceOn } from "@/lib/pulse/history";
+import { SCRIPT } from "@/lib/domain/scripts";
 import "./story.css";
 import { headline, signalGuide, summary } from "@/lib/domain/signal";
 import type { FeedStatus, GhostEventDetail } from "@/lib/domain/types";
@@ -44,15 +45,6 @@ export default function EventPage({ params }: { params: Params }) {
   );
 }
 
-const SCRIPT: Record<string, string> = {
-  pubkey: "a pay-to-public-key script (P2PK), the format of Bitcoin's earliest years, which writes the public key itself onto the chain",
-  pubkeyhash: "a standard pay-to-public-key-hash address (P2PKH), the classic address starting with 1",
-  scripthash: "a pay-to-script-hash address (P2SH), the kind starting with 3",
-  witness_v0_keyhash: "a native SegWit address (P2WPKH), starting with bc1q",
-  witness_v0_scripthash: "a native SegWit script address (P2WSH)",
-  witness_v1_taproot: "a Taproot address (P2TR), starting with bc1p",
-  multisig: "a bare multisignature script",
-};
 
 const usdFmt = (n: number) => (n < 100 ? `$${n.toFixed(2)}` : `$${Math.round(n).toLocaleString("en-US")}`);
 
