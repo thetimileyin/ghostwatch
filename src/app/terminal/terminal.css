@@ -229,7 +229,7 @@
 .gw-stage-body .pt { width: 100%; height: 100%; }
 .pt { display: flex; flex-direction: column; min-height: 0; padding: 12px 14px 12px; gap: 10px; }
 .pt--empty { display: grid; place-items: center; color: var(--fg-3); font-family: var(--font-mono); font-size: 11px; }
-.pt-top { display: flex; align-items: flex-end; gap: 12px 28px; flex-wrap: wrap; }
+.pt-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 28px; flex-wrap: wrap; }
 .pt-now { min-width: 0; }
 .pt-k { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg-3); white-space: nowrap; }
 .pt-big { margin-top: 4px; font-family: var(--font-pixel); font-size: 30px; line-height: 1; color: var(--fg); white-space: nowrap; }
