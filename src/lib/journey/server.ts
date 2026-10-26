@@ -1,9 +1,9 @@
 import { getEvent } from "@/lib/db/read";
 import { eventIdForTxid } from "@/lib/detector/detect";
 import { rpcFromEnv } from "@/lib/detector/rpc";
+import { MEMPOOL, cached, chunks, getJson } from "./fetch";
 import { buildJourney, isTxid, type Journey, type RawOutspend, type RawTx } from "./journey";
 
-const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
 
 export interface BlockInfo {
   txCount: number;
@@ -20,35 +20,6 @@ export type JourneyResult =
   | { kind: "block"; hash: string }
   | { kind: "invalid" }
   | { kind: "error" };
-
-const state = globalThis as unknown as {
-  gwJourneys?: Map<string, { at: number; ttl: number; value: JourneyResult }>;
-  gwJourneySlots?: { busy: number; queue: (() => void)[] };
-};
-const cache = (state.gwJourneys ??= new Map());
-const slots = (state.gwJourneySlots ??= { busy: 0, queue: [] });
-const MAX_CACHED = 300;
-const MAX_BUSY = 3; // lookups at once; the rest wait their turn
-
-async function withSlot<T>(fn: () => Promise<T>): Promise<T> {
-  if (slots.busy >= MAX_BUSY) await new Promise<void>((r) => slots.queue.push(r));
-  slots.busy++;
-  try {
-    return await fn();
-  } finally {
-    slots.busy--;
-    slots.queue.shift()?.();
-  }
-}
-
-async function getJson<T>(url: string, timeoutMs = 10_000): Promise<T | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store", headers: { accept: "application/json" } });
-    return res.ok ? ((await res.json()) as T) : null;
-  } catch {
-    return null;
-  }
-}
 
 // mempool.space script names to Bitcoin Core's, so the page speaks one vocabulary.
 const CORE_TYPE: Record<string, string> = {
@@ -93,7 +64,6 @@ async function fillWaiting(raw: RawTx) {
   });
 }
 
-const chunks = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));
 
 /**
  * Everything the journey page needs for one transaction. Fetched by our server, so the
@@ -103,16 +73,9 @@ const chunks = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(l
 export async function getJourney(input: string): Promise<JourneyResult> {
   const txid = input.trim().toLowerCase();
   if (!isTxid(txid)) return { kind: "invalid" };
-  const hit = cache.get(txid);
-  if (hit && Date.now() - hit.at < hit.ttl) return hit.value;
-
-  const value = await withSlot(() => load(txid));
-  if (value.kind === "ok" || value.kind === "not-found" || value.kind === "block") {
-    const ttl = value.kind === "ok" && !value.journey.confirmed ? 20_000 : 10 * 60_000;
-    cache.set(txid, { at: Date.now(), ttl, value });
-    if (cache.size > MAX_CACHED) cache.delete(cache.keys().next().value!);
-  }
-  return value;
+  return cached(`tx:${txid}`, () => load(txid), (v) =>
+    v.kind === "ok" ? (v.journey.confirmed ? 10 * 60_000 : 20_000) : v.kind === "not-found" || v.kind === "block" ? 10 * 60_000 : 0,
+  );
 }
 
 async function load(txid: string): Promise<JourneyResult> {

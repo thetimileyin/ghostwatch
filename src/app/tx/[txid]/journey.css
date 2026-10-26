@@ -38,7 +38,12 @@
 .jr-wake p { margin: 0 0 12px; }
 .jr-muted { color: var(--fg-3) !important; font-size: 14px !important; margin: 0 !important; }
 
-.jr-again { margin-top: 40px; max-width: 560px; padding-top: 24px; border-top: 1px solid var(--line); }
+.jr-again { margin-top: 40px; max-width: 600px; padding-top: 24px; border-top: 1px solid var(--line); }
+.jr-blocknav { display: flex; justify-content: space-between; gap: 16px; max-width: 760px; margin-top: 36px; }
+.jr-h-link { color: inherit; text-decoration: underline; text-decoration-color: var(--line-3); text-underline-offset: 0.15em; text-decoration-thickness: 1px; }
+.jr-h-link:hover { text-decoration-color: var(--fg); }
+.jr-addr { color: inherit; text-decoration: none; border-bottom: 1px solid var(--line-3); }
+.jr-addr:hover { border-color: var(--fg); }
 
 /* Nothing to follow (bad ID, block hash, not found) */
 .jr-empty { min-height: calc(100dvh - 66px); display: flex; flex-direction: column; justify-content: center; max-width: 640px; }

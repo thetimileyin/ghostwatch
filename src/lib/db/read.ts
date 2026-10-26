@@ -123,3 +123,9 @@ export async function getFeed(f: FeedFilter = {}): Promise<FeedPayload> {
   const archive = await listEvents("archive", { ...f, minCohort: Math.max(f.minCohort ?? 5, 10) as Cohort, limit: 8, order: "largest" });
   return { status, stats, events, archive };
 }
+
+/** Awakenings recorded in one block (live or archive), largest first. */
+export async function eventsInBlock(height: number): Promise<GhostEvent[]> {
+  const { rows } = await pool().query("select * from ghost_events where block_height = $1 order by dormant_sats desc limit 50", [height]);
+  return rows.map(rowToEvent);
+}

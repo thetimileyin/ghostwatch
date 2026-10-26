@@ -118,7 +118,15 @@ const LOCK_TAG: Record<string, string> = {
  * coin's transaction is the orange one. The tag on top is how the coin was locked.
  * Falls back to an empty outline when the block can't be looked up.
  */
-export function BlockGlyph({ height, value, txCount, fullness, scriptType }: { height: number; value: number; txCount: number | null; fullness: number | null; scriptType: string | null }) {
+export function BlockGlyph({
+  height, value, txCount, fullness, scriptType, mark = "this coin", valueLabel = "created",
+}: {
+  height: number; value: number; txCount: number | null; fullness: number | null; scriptType: string | null;
+  /** What the one orange square stands for; null draws no orange square (a whole-block view). */
+  mark?: string | null;
+  /** Caption after the amount, e.g. "created" or "reward". */
+  valueLabel?: string;
+}) {
   // Front face: x 40..160, y 40..140. Fill rises from the bottom; a sliver always shows so empty-ish blocks still read.
   const fill = fullness == null ? 0 : Math.max(0.06, fullness);
   const fillTop = 140 - 100 * fill;
@@ -142,10 +150,10 @@ export function BlockGlyph({ height, value, txCount, fullness, scriptType }: { h
         {Array.from({ length: squares }, (_, i) => {
           const x = 40 + (i % cols) * cell;
           const y = 140 - gridH + Math.floor(i / cols) * cell;
-          const coin = i === coinIndex;
+          const coin = mark != null && i === coinIndex;
           return <rect key={i} x={x + 1.2} y={Math.max(41, y) + 1.2} width={cell - 2.4} height={cell - 2.4} className={coin ? "st-tx-sq st-tx-sq--coin" : "st-tx-sq"} />;
         })}
-        {txCount == null && <rect className="st-coin" x="88" y="78" width="24" height="24" />}
+        {txCount == null && mark != null && <rect className="st-coin" x="88" y="78" width="24" height="24" />}
         {tag && (
           <g className="st-lock-tag">
             <rect x="80" y="23" width={tag.length * 6.6 + 12} height="13" />
@@ -155,9 +163,9 @@ export function BlockGlyph({ height, value, txCount, fullness, scriptType }: { h
       </svg>
       <figcaption className="st-cap st-cap--center">
         <span>Block {heightLabel(height)}</span>
-        {txCount != null && <span>{txCount.toLocaleString("en-US")} transaction{txCount === 1 ? "" : "s"}{per > 1 ? ` · each square ${per}` : ""} · orange: this coin</span>}
+        {txCount != null && <span>{txCount.toLocaleString("en-US")} transaction{txCount === 1 ? "" : "s"}{per > 1 ? ` · each square ${per}` : ""}{mark != null ? ` · orange: ${mark}` : ""}</span>}
         {fullness != null && <span>{fullness < 0.01 ? "under 1%" : `${Math.round(fullness * 100)}%`} full</span>}
-        <span>{satsToBtcString(value)} BTC created</span>
+        <span>{satsToBtcString(value)} BTC {valueLabel}</span>
       </figcaption>
     </figure>
   );

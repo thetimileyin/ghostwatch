@@ -29,6 +29,12 @@ export function btcShort(sats: number): string {
   return `${btc.toLocaleString("en-US", { maximumSignificantDigits: 4 })} BTC`;
 }
 
+/** For headings and sentences: small amounts in sats ("1 sat", "3,370 sats"), the rest like btcShort. */
+export function amountWords(sats: number): string {
+  if (sats < 100_000) return `${Math.round(sats).toLocaleString("en-US")} sat${Math.round(sats) === 1 ? "" : "s"}`;
+  return btcShort(sats);
+}
+
 export function satsLabel(sats: number): string {
   return `${sats.toLocaleString("en-US")} sats`;
 }

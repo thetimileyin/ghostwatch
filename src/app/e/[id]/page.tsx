@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { CopyButton, ShareBar } from "@/components/copy";
 import { axisPct } from "@/components/event-bits";
-import { CheckIcon, ExternalLinkIcon, InfoIcon, WarningIcon } from "@/components/icons";
+import { ArrowRightIcon, CheckIcon, ExternalLinkIcon, InfoIcon, WarningIcon } from "@/components/icons";
 import { BlockGlyph, SleepField, WakeFlow, halvingsBetween, subsidyAt } from "@/components/story/visuals";
 import { PageHeader } from "@/components/page-header";
 import { getEvent, getStatus } from "@/lib/db/read";
@@ -206,7 +207,8 @@ async function EventContent({ params }: { params: Params }) {
             <p>Everything above comes from public block data. Open the transaction and the block on a block explorer, or on your own node.</p>
           </div>
           <div className="st-verify">
-            <a href={`${EXPLORER}/tx/${e.txid}`} target="_blank" rel="noopener noreferrer" className="st-btn st-btn--primary">Transaction on mempool.space <ExternalLinkIcon aria-hidden /></a>
+            <Link href={`/tx/${e.txid}`} className="st-btn st-btn--primary">Follow the coins <ArrowRightIcon aria-hidden /></Link>
+            <a href={`${EXPLORER}/tx/${e.txid}`} target="_blank" rel="noopener noreferrer" className="st-btn">Transaction on mempool.space <ExternalLinkIcon aria-hidden /></a>
             <a href={`${EXPLORER}/block/${e.blockHash}`} target="_blank" rel="noopener noreferrer" className="st-btn">Block {heightLabel(e.blockHeight)} <ExternalLinkIcon aria-hidden /></a>
           </div>
           <ShareBar url={url} text={`${headline(e)}.`} />

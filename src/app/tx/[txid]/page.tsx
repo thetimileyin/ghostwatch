@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { CopyButton } from "@/components/copy";
 import { axisPct } from "@/components/event-bits";
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, ExternalLinkIcon, InfoIcon, WarningIcon } from "@/components/icons";
+import { AgeBreakdown } from "@/components/journey-bits";
 import { PageHeader } from "@/components/page-header";
 import { BlockGlyph, WakeFlow } from "@/components/story/visuals";
-import { TxSearchForm } from "@/components/tx-search";
+import { GhostSearch } from "@/components/tx-search";
 import { SCRIPT, SCRIPT_TAG } from "@/lib/domain/scripts";
-import { ageCompact, ago, btcShort, dateShort, dateTimeUtc, heightLabel, isoDate, middleTruncate, monthYear, satsToBtcString, spanWords } from "@/lib/domain/format";
+import { ageCompact, ago, amountWords, dateShort, dateTimeUtc, heightLabel, isoDate, middleTruncate, monthYear, satsToBtcString, spanWords } from "@/lib/domain/format";
 import type { GhostInput } from "@/lib/domain/types";
 import { ageBucket, feeVsTypical, isTxid, type Journey, type JourneyInput, type JourneyOutput } from "@/lib/journey/journey";
 import { getJourney, type BlockInfo } from "@/lib/journey/server";
@@ -41,24 +43,18 @@ export default function TxPage({ params }: { params: Params }) {
   );
 }
 
-const usd = (n: number) => (n < 1 ? `$${n.toFixed(2)}` : n < 100 ? `$${n.toFixed(2)}` : `$${Math.round(n).toLocaleString("en-US")}`);
+const usd = (n: number) => (n < 0.01 ? "under a cent" : n < 100 ? `$${n.toFixed(2)}` : `$${Math.round(n).toLocaleString("en-US")}`);
 const n = (x: number) => x.toLocaleString("en-US");
 const btc = (sats: number) => `${satsToBtcString(sats)} BTC`; // exact, for lists and details
-const amt = btcShort; // rounded, for headings and sentences
+const amt = amountWords; // rounded (or sats when small), for headings and sentences
 const plural = (k: number, one: string, many = `${one}s`) => `${n(k)} ${k === 1 ? one : many}`;
 
-const AGE_LABEL = {
-  hours: "Under a day old",
-  days: "Days old",
-  months: "Months old",
-  years: "1 to 5 years old",
-  dormant: "5+ years old: woke up",
-} as const;
 
 async function TxContent({ params }: { params: Params }) {
   await connection();
   const { txid } = await params;
   const r = await getJourney(txid);
+  if (r.kind === "block") redirect(`/block/${r.hash}`);
   if (r.kind !== "ok") return <NotFollowable kind={r.kind} />;
 
   const { journey: j, block, eventId, firstSeen, tip } = r;
@@ -157,7 +153,7 @@ async function TxContent({ params }: { params: Params }) {
               )}
               {j.inputs.some((i) => i.minerReward) && <p>{plural(j.inputs.filter((i) => i.minerReward).length, "coin")} started life as a miner&apos;s reward.</p>}
             </div>
-            <AgeBreakdown inputs={j.inputs} at={at} />
+            <AgeBreakdown coins={j.inputs.map((i) => ({ valueSats: i.valueSats, time: i.createdTime }))} at={at} label="How old the spent coins were" />
             <CoinList title="The coins it spent" items={[...j.inputs].sort((a, b) => b.valueSats - a.valueSats).slice(0, SHOW)} total={j.inputs.length} at={at} />
           </section>
         )}
@@ -206,7 +202,7 @@ async function TxContent({ params }: { params: Params }) {
             <p className="st-idx">[04] {j.confirmed ? "Into a block" : "Not in a block yet"}</p>
             {j.confirmed && j.blockHeight != null ? (
               <>
-                <h2 id="ch4">{dateTimeUtc(at)}. Block {heightLabel(j.blockHeight)}.</h2>
+                <h2 id="ch4">{dateTimeUtc(at)}. <Link href={`/block/${j.blockHeight}`} className="jr-h-link">Block {heightLabel(j.blockHeight)}</Link>.</h2>
                 <p>
                   {block?.pool ? <>Mined by <b>{block.pool}</b>. </> : null}
                   {block ? <>The block held <b className="num">{n(block.txCount)}</b> transactions and was {Math.round(block.fullness * 100)}% full. </> : null}
@@ -225,7 +221,7 @@ async function TxContent({ params }: { params: Params }) {
             )}
           </div>
           {j.confirmed && j.blockHeight != null && (
-            <BlockGlyph height={j.blockHeight} value={j.totalOutSats} txCount={block?.txCount ?? null} fullness={block?.fullness ?? null} scriptType={null} />
+            <BlockGlyph height={j.blockHeight} value={j.totalOutSats} txCount={block?.txCount ?? null} fullness={block?.fullness ?? null} scriptType={null} mark="this transaction" valueLabel="moved" />
           )}
         </section>
 
@@ -297,7 +293,7 @@ async function TxContent({ params }: { params: Params }) {
           </div>
           <FullDetails j={j} block={block} at={at} />
           <div className="jr-again">
-            <TxSearchForm />
+            <GhostSearch />
           </div>
         </section>
       </main>
@@ -323,29 +319,6 @@ function feeShare(fee: number, spent: number): string {
 
 function asGhostInput(i: JourneyInput): GhostInput {
   return { inputIndex: i.index, prevTxid: i.prevTxid, prevVout: i.prevVout, createdHeight: i.createdHeight ?? 0, createdTime: i.createdTime ?? 0, valueSats: i.valueSats, scriptType: i.scriptType, qualifies: i.dormant };
-}
-
-/** How old the spent coins were, grouped in plain words, with each group's share of the value. */
-function AgeBreakdown({ inputs, at }: { inputs: JourneyInput[]; at: number }) {
-  const total = inputs.reduce((s, i) => s + i.valueSats, 0) || 1;
-  const groups = (["hours", "days", "months", "years", "dormant"] as const)
-    .map((k) => {
-      const list = inputs.filter((i) => i.createdTime != null && ageBucket(at - i.createdTime) === k);
-      return { k, count: list.length, sats: list.reduce((s, i) => s + i.valueSats, 0) };
-    })
-    .filter((g) => g.count > 0);
-  if (groups.length === 0) return null;
-  return (
-    <dl className="jr-ages" aria-label="How old the spent coins were">
-      {groups.map((g) => (
-        <div key={g.k} className={g.k === "dormant" ? "jr-age jr-age--old" : "jr-age"}>
-          <dt>{AGE_LABEL[g.k]}</dt>
-          <dd className="jr-age-bar" aria-hidden="true"><i style={{ width: `${Math.max(2, (g.sats / total) * 100)}%` }} /></dd>
-          <dd className="num">{plural(g.count, "coin")} · {amt(g.sats)}</dd>
-        </div>
-      ))}
-    </dl>
-  );
 }
 
 function CoinList({ title, items, total, at }: { title: string; items: JourneyInput[]; total: number; at: number }) {
@@ -382,7 +355,7 @@ function OutList({ items, total, price }: { items: JourneyOutput[]; total: numbe
           <li key={o.index} className="jr-row">
             <span className="jr-amt num">{o.kind === "data" ? "Note" : btc(o.valueSats)}</span>
             <span className="jr-what">
-              {o.kind === "data" ? "data only, no bitcoin" : o.address ? <>to <code title={o.address}>{middleTruncate(o.address, 6)}</code></> : "to a script without an address"}
+              {o.kind === "data" ? "data only, no bitcoin" : o.address ? <>to <Link href={`/address/${o.address}`} className="jr-addr"><code title={o.address}>{middleTruncate(o.address, 6)}</code></Link></> : "to a script without an address"}
               {o.kind === "change" ? " · back to the sender" : ""}
               {price != null && o.kind !== "data" && o.valueSats > 0 ? ` · ${usd((o.valueSats / 1e8) * price)}` : ""}
             </span>
@@ -481,7 +454,7 @@ function NotFollowable({ kind }: { kind: "not-found" | "block" | "invalid" | "er
   const copy = {
     invalid: { h: "That isn't a transaction ID.", p: "A transaction ID is 64 characters of 0–9 and a–f. Copy it whole from your wallet or a block explorer." },
     "not-found": { h: "No transaction with that ID.", p: "Check you copied all 64 characters. A transaction that was just sent can take a few seconds to reach the network." },
-    block: { h: "That's a block, not a transaction.", p: "Block pages are coming next. For now, paste a transaction ID." },
+    block: { h: "That's a block, not a transaction.", p: "Opening the block instead." },
     error: { h: "We couldn't look that up right now.", p: "Our data source isn't answering. The link is fine; try again in a minute." },
   }[kind];
   return (
@@ -490,7 +463,7 @@ function NotFollowable({ kind }: { kind: "not-found" | "block" | "invalid" | "er
       <main id="main" className="pg-frame jr-empty">
         <h1>{copy.h}</h1>
         <p>{copy.p}</p>
-        <TxSearchForm autoFocus />
+        <GhostSearch autoFocus />
       </main>
     </div>
   );
