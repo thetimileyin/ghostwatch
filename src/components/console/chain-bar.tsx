@@ -97,7 +97,7 @@ function useOneLine() {
       let need = groups.reduce((w, g) => w + inner(g!), 0) + gap(el) * 2;
       const saves: Record<(typeof SHED)[number], number> = {
         utc: width(".cb-utc") + (el.querySelector(".cb-utc") ? gap(c) : 0),
-        words: width(".cb-weather-l") + width(".cb-watch-l"),
+        words: width(".cb-weather-l"), // "watching" always stays: a bare number means nothing
         chain: width(".tc-b--old") + 3 * el.querySelectorAll(".tc-b--old").length,
         guide: width(".cb-guide-l"),
       };
@@ -174,7 +174,7 @@ export function ChainBar({
           <span className="cb-watch" title={`${pulse.watching} watching now. Tabs open on GhostWatch, counted anonymously: no cookies, no IP addresses.`}>
             <i aria-hidden="true" />
             <b className="num">{pulse.watching.toLocaleString("en-US")}</b>
-            <span className="cb-watch-l">watching</span>
+            <span className="cb-watch-l">{pulse.watching === 1 ? "person" : "people"} watching</span>
           </span>
         )}
         <span className="cb-price">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 
 const GUIDE = [
   { label: "New block", cls: "k-block", meaning: "Miners added a new batch of transactions to the chain.", why: "Confirmed transactions are final; blocks arrive about every 10 minutes.", not: "Not a sign of anything unusual on its own." },
@@ -19,7 +20,9 @@ export function FieldGuide({ onClose }: { onClose: () => void }) {
     // dialog's close event and dismiss the guide the moment it opened. Unmounting
     // removes the dialog, which closes it anyway.
     const d = ref.current;
+    lockScroll();
     if (d && !d.open) d.showModal();
+    return unlockScroll;
   }, []);
   return (
     <dialog ref={ref} className="gw-guide" onClose={onClose} aria-labelledby="guide-h">

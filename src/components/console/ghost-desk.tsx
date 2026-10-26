@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SleepTrack } from "@/components/event-bits";
 import { ArrowRightIcon, CloseIcon } from "@/components/icons";
@@ -168,7 +169,9 @@ function PreviewSheet({ e, now, onClose }: { e: GhostEvent; now: number; onClose
   useEffect(() => {
     // No close() in cleanup: React's dev double-mount would fire the close event and dismiss it at once.
     const d = ref.current;
+    lockScroll();
     if (d && !d.open) d.showModal();
+    return unlockScroll;
   }, []);
   return (
     <dialog

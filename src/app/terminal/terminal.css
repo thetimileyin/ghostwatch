@@ -403,7 +403,7 @@
 /* One line: ChainBar measures the bar and sheds detail in this order until it fits. */
 .cb:not([data-fit]) .cb-c { visibility: hidden; } /* until measured: no overlapping first frame */
 .cb[data-utc] .cb-utc { display: none; }
-.cb[data-words] .cb-weather-l, .cb[data-words] .cb-watch-l { display: none; }
+.cb[data-words] .cb-weather-l { display: none; }
 .cb[data-chain] .tc-b--old { display: none; }
 .cb-guide { display: inline-flex; align-items: center; gap: 7px; }
 .cb-guide-i { display: none; width: 15px; height: 15px; }

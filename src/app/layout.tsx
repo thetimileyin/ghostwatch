@@ -32,16 +32,12 @@ export const viewport: Viewport = {
 // Applies the saved theme before first paint so the page never flashes the wrong one.
 const THEME_INIT = `try{var t=localStorage.getItem("gw:theme");if(t==="dark"||t==="light")document.documentElement.dataset.theme=t;else document.documentElement.dataset.theme="light"}catch(e){document.documentElement.dataset.theme="light"}`;
 
-// Remember how wide the page's scrollbar is (0 for overlay scrollbars). While a dialog has
-// scrolling locked, that width is put back as padding so nothing on the page moves.
-const SCROLLBAR_INIT = `(function(){var d=document.documentElement;function m(){if(d.querySelector("dialog[open]"))return;d.style.setProperty("--sbw",Math.max(0,innerWidth-d.clientWidth)+"px")}m();addEventListener("resize",m);addEventListener("load",m);document.addEventListener("DOMContentLoaded",function(){m();if(window.ResizeObserver)new ResizeObserver(m).observe(document.body)})})()`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${grotesk.variable} ${mono.variable} ${GeistPixelSquare.variable}`} data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-        <script dangerouslySetInnerHTML={{ __html: SCROLLBAR_INIT }} />
       </head>
       <body>
         <a className="skip" href="#main">Skip to content</a>

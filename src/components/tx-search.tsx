@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { addressType, normalizeAddress } from "@/lib/journey/address";
 import { isTxid } from "@/lib/journey/journey";
@@ -186,7 +187,9 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     // Open once; no close() in cleanup (React's dev double-mount would dismiss it at once).
     const d = ref.current;
+    lockScroll();
     if (d && !d.open) d.showModal();
+    return unlockScroll;
   }, []);
   return (
     <dialog ref={ref} className="txs-dialog" onClose={onClose} aria-label="Search" onClick={(e) => e.target === e.currentTarget && onClose()}>
