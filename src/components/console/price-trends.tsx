@@ -228,41 +228,41 @@ export function PriceTrends({ live }: { live: number | null }) {
 
   return (
     <div className="pt">
-      <dl className="pt-read">
-        <div>
-          <dt>Now</dt>
-          <dd className="num">{fmtPrice(now)}</dd>
+      {/* One row: the headline price doubles as the hover readout; the high and the range sit beside it. */}
+      <div className="pt-head">
+        <div className="pt-now" aria-live="polite">
+          <div className="pt-k">{hover == null ? "Bitcoin now" : fmtDate(view_.days[shown])}</div>
+          <div className="pt-big num">{fmtPrice(pv)}</div>
+          <div className="pt-chg">
+            {hover == null ? (
+              <>
+                <b className={spanChange < 0 ? "pt-down" : ""}>{pct(spanChange)}</b> {r.span.toLowerCase()} · from {fmtPrice(view_.usd[0])}
+              </>
+            ) : hover < n - 1 ? (
+              <>
+                Now <b className={now < pv ? "pt-down" : ""}>{pct(now / pv - 1)}</b> since this day
+              </>
+            ) : (
+              "Today"
+            )}
+          </div>
         </div>
-        <div>
-          <dt>All-time high</dt>
-          <dd className="num">{fmtPrice(series.ath.usd)}</dd>
-          <dd className="pt-sub">{fmtDate(series.ath.day)}</dd>
+        <div className="pt-side">
+          <div className="pt-ath-r">
+            <div className="pt-k">All-time high</div>
+            <div className="pt-mid num">{fmtPrice(series.ath.usd)}</div>
+            <div className="pt-chg">
+              {fmtDate(series.ath.day)} · {fromHigh >= -0.0005 ? <b>new high</b> : <><b className="pt-down">{pct(fromHigh)}</b> now</>}
+            </div>
+          </div>
+          <div className="seg" role="radiogroup" aria-label="Time range">
+            {RANGES.map((x) => (
+              <button key={x.k} type="button" role="radio" aria-checked={range === x.k} onClick={() => { setRange(x.k); setHover(null); }}>
+                {x.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div>
-          <dt>{fromHigh >= -0.0005 ? "At the high" : "Below the high"}</dt>
-          <dd className={`num${fromHigh < -0.0005 ? " pt-down" : ""}`}>{fromHigh >= -0.0005 ? "New high" : pct(fromHigh)}</dd>
-        </div>
-        <div>
-          <dt>{r.span}</dt>
-          <dd className={`num${spanChange < 0 ? " pt-down" : ""}`}>{pct(spanChange)}</dd>
-          <dd className="pt-sub">from {fmtPrice(view_.usd[0])}</dd>
-        </div>
-      </dl>
-
-      <div className="pt-bar">
-        <div className="seg" role="radiogroup" aria-label="Time range">
-          {RANGES.map((x) => (
-            <button key={x.k} type="button" role="radio" aria-checked={range === x.k} onClick={() => { setRange(x.k); setHover(null); }}>
-              {x.label}
-            </button>
-          ))}
-        </div>
-        <div className="pt-hover" aria-live="polite">
-          <b className="num">{fmtPrice(pv)}</b>
-          <span>{fmtDate(view_.days[shown])}</span>
-          {hover != null && hover < n - 1 && <span>· now {pct(now / pv - 1)}</span>}
-        </div>
-        {log && <span className="pt-note">{view === "simple" ? "Each line is 10× the one below" : "Log scale"}</span>}
       </div>
 
       <div className="pt-plot" ref={plotRef}>
@@ -283,6 +283,7 @@ export function PriceTrends({ live }: { live: number | null }) {
         >
           {geo && (
             <svg width={W} height={H} aria-hidden="true">
+              {log && <text x={4} y={12} className="pt-ylab">{view === "simple" ? "Each line is 10× the one below" : "Log scale"}</text>}
               {yt.filter((v) => !athIn || Math.abs(geo.y(v) - Math.max(12, geo.y(series.ath.usd) - 8)) > 14 || geo.x(series.ath.day) < W - 200).map((v) => (
                 <g key={v}>
                   <line x1={0} x2={W} y1={geo.y(v)} y2={geo.y(v)} className="pt-grid" />
