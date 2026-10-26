@@ -194,7 +194,7 @@ a { color: inherit; }
 
 /* Reading-page header (evidence stories, How it works) */
 .pg-frame { max-width: 1080px; margin: 0 auto; padding-inline: var(--gutter); }
-.pg-top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--void) 86%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.pg-top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--void) 86%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 .pg-top-in { display: flex; align-items: center; gap: 12px 24px; padding-block: 12px; }
 .pg-top .brand { margin-right: auto; color: var(--fg); }
 .pg-back { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--fg-2); text-decoration: none; }
@@ -417,7 +417,7 @@ footer.foot a:hover { color: var(--fg); }
 .txs-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 .txs-btn svg { width: 15px; height: 15px; }
 .txs-dialog { width: min(560px, calc(100vw - 32px)); margin: 12vh auto 0; padding: 18px 18px 14px; border: 1px solid var(--line-3); background: var(--ink-2); color: var(--fg); }
-.txs-dialog::backdrop { background: color-mix(in srgb, var(--void) 55%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.txs-dialog::backdrop { background: color-mix(in srgb, var(--void) 55%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .txs-dialog[open] { animation: txs-in 160ms var(--ease-out); }
 @keyframes txs-in { from { opacity: 0; transform: translateY(-6px); } }
 html:has(.txs-dialog[open]), html:has(.txs-dialog[open]) body { overflow: hidden; }

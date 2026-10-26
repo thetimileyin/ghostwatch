@@ -343,7 +343,7 @@
 
 /* ───────── Field guide ───────── */
 .gw-guide { width: min(680px, calc(100vw - 32px)); max-height: 82vh; margin: auto; padding: 0; background: var(--ink-2); color: var(--fg); border: 1px solid var(--line-3); }
-.gw-guide::backdrop { background: rgba(8, 8, 9, 0.45); background: color-mix(in srgb, var(--void) 55%, transparent); backdrop-filter: blur(8px) saturate(0.9); -webkit-backdrop-filter: blur(8px) saturate(0.9); }
+.gw-guide::backdrop { background: rgba(8, 8, 9, 0.45); background: color-mix(in srgb, var(--void) 55%, transparent); -webkit-backdrop-filter: blur(8px) saturate(0.9); backdrop-filter: blur(8px) saturate(0.9); }
 .gw-guide header { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--line-2); position: sticky; top: 0; background: var(--ink-2); }
 .gw-guide h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; }
 .gw-guide-lede { color: var(--fg-2); margin: 14px 20px 4px; font-size: 14px; }
@@ -538,7 +538,7 @@ html:has(dialog[open]), html:has(dialog[open]) body { overflow: hidden; overscro
 .gwx-sheet { position: fixed; inset: auto 0 0 0; width: 100%; max-width: 640px; max-height: 86dvh; margin: 0 auto; padding: 0; border: 1px solid var(--line-3); border-bottom: 0; background: var(--ink-2); color: var(--fg); overflow: hidden; }
 .gwx-sheet[open] { animation: sheet-up 260ms var(--ease-out); }
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: none; } }
-.gwx-sheet::backdrop { background: rgba(8, 8, 9, 0.45); background: color-mix(in srgb, var(--void) 55%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.gwx-sheet::backdrop { background: rgba(8, 8, 9, 0.45); background: color-mix(in srgb, var(--void) 55%, transparent); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .gwx-sheet[open]::backdrop { animation: guide-fade 200ms ease; }
 .gwx-sheet-in { max-height: 86dvh; overflow-y: auto; overscroll-behavior: contain; padding-bottom: env(safe-area-inset-bottom); }
 .gwx-sheet-bar { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: center; height: 48px; border-bottom: 1px solid var(--line); background: var(--ink-2); }
