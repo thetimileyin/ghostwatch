@@ -83,7 +83,7 @@ export default function Home() {
       <section className="lx-frame lx-next" aria-labelledby="next-h">
         <div className="section-label">
           <div className="idx">
-            [ <em>Next</em> ] · Coming soon
+            [ <em>Next</em> ] · <b>Coming soon</b>
           </div>
         </div>
         <h2 id="next-h" className="h-section">
