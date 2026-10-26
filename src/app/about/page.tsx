@@ -86,7 +86,7 @@ export default function About() {
           <div>
             <p>
               We only report confirmed blocks, and each event page notes the last block we checked. If a block is replaced by a chain
-              reorganization, its events are marked <b>reversed</b> and keep their pages, and Telegram posts get a correction.
+              reorganization, its events are marked <b>reversed</b> and keep their pages.
             </p>
           </div>
         </section>
@@ -121,8 +121,9 @@ export default function About() {
             </p>
             <p>We describe coins, not people. We don&apos;t label addresses with names, and we don&apos;t publish lists of vulnerable coins.</p>
             <p>
-              The same goes for Bitcoin nodes. The map groups them by place: how many nodes are in a city, which software they run, and how many
-              are caught up. Node addresses, hostnames and hosting providers are dropped on our server and never shown.
+              The same goes for Bitcoin nodes. The map groups them by area and shows only how many nodes are near each city. Which software
+              nodes run, and how many are caught up, is shown for the whole network, never per node. Node addresses, hostnames and hosting
+              providers are never shown.
             </p>
           </div>
         </section>
