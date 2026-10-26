@@ -104,13 +104,13 @@
 .rw-bar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--fg) 0 2px, transparent 2px 4px); }
 
 /* Pixel meters */
-.sc { display: grid; grid-template-columns: minmax(0, 1fr) 82px 58px; gap: 8px; align-items: center; padding: 5px 0; font-size: 12px; color: var(--fg-2); }
+.sc { display: grid; grid-template-columns: minmax(0, 1fr) 82px minmax(58px, max-content); gap: 8px; align-items: center; padding: 5px 0; font-size: 12px; color: var(--fg-2); }
 .sc-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sc-b { display: grid; grid-template-columns: repeat(16, 1fr); gap: 1px; height: 8px; }
 .sc-b i { background: var(--line-2); }
 .sc-b i.on { background: var(--fg); }
 .sc-b--hot i.on { background: var(--accent); }
-.sc-v { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg); text-align: right; }
+.sc-v { font-family: var(--font-mono); font-size: 11.5px; color: var(--fg); text-align: right; white-space: nowrap; }
 
 /* ───────── Centre stage ───────── */
 .gw-stage { position: relative; flex: 1 1 auto; min-height: 380px; display: flex; flex-direction: column; border: 1px solid var(--frame); background-color: var(--void); background-image: var(--dots); background-size: 14px 14px; }
@@ -255,8 +255,8 @@
 .pt-head--read { fill: var(--fg); }
 .pt-x { position: relative; height: 14px; margin-top: -6px; font-family: var(--font-mono); font-size: 10px; color: var(--fg-4); }
 .pt-x span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
-.pt-years { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(58px, 1fr); overflow-x: auto; border-top: 1px solid var(--line); scrollbar-width: thin; mask-image: linear-gradient(to right, transparent, #000 28px); }
-.pt-y { padding: 7px 6px 2px; border-left: 1px solid var(--line); min-width: 0; }
+.pt-years { list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(max-content, 1fr); overflow-x: auto; border-top: 1px solid var(--line); scrollbar-width: thin; mask-image: linear-gradient(to right, transparent, #000 28px); }
+.pt-y { padding: 7px 8px 2px; border-left: 1px solid var(--line); min-width: 58px; }
 .pt-y:first-child { border-left: 0; padding-left: 0; }
 .pt-y-k { display: flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); }
 .pt-y-k i { width: 5px; height: 5px; background: var(--fg-3); }

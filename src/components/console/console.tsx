@@ -347,7 +347,8 @@ function Nodes({ nodes, down }: { nodes: NodesSnapshot | null; down: boolean }) 
   const bars = (list: { label: string; share: number }[]) =>
     list.map((v) => (
       <div key={v.label} className="rw rw--bar">
-        <span className="rw-l">{v.label}</span>
+        {/* Under "Software", "Core 31.1" / "Knots" is the usual shorthand and fits the column. */}
+        <span className="rw-l" title={v.label}>{v.label.replace(/^Bitcoin /, "")}</span>
         <span className="rw-bar" aria-hidden="true"><i style={{ width: pct(v.share) }} /></span>
         <span className="rw-v num">{pct(v.share)}</span>
       </div>
