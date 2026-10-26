@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { durationShort, monthYear } from "@/lib/domain/format";
 import { classifyTx, CLASS_COPY } from "@/lib/pulse/interest";
-import { btc, compact, satvb, short, sinceShort, usd } from "@/lib/pulse/format";
+import { btc, compact, satvb, short, sinceShort, usd, btcOrSats } from "@/lib/pulse/format";
 import type { NodesSnapshot, Pulse, PulseBlock } from "@/lib/pulse/types";
 import { usePulse, useNow, type LiveEvent } from "@/lib/pulse/use-pulse";
 import { MachineFloor } from "./blocks-view";
@@ -324,7 +324,7 @@ function CoinInspector({ pulse, now }: { pulse: Pulse | null; now: number }) {
               {ghosts.slice(0, 6).map((x) => (
                 <li key={x.id}>
                   <button type="button" aria-pressed={x.id === g.id} onClick={() => setSel(x.id)}>
-                    <span className="num">{btc(x.dormantSats)}</span>
+                    <span className="num">{btcOrSats(x.dormantSats)}</span>
                     <span>{durationShort(x.oldestCreatedTime, x.blockTime).replace(/ \d+m \d+d$/, "")}</span>
                   </button>
                 </li>

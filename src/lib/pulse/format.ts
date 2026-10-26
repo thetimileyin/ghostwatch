@@ -9,6 +9,11 @@ export function btc(sats: number): string {
   return `${v.toLocaleString("en-US", { maximumSignificantDigits: 3 })} BTC`;
 }
 
+/** Small amounts read better in sats: 3,370 sats rather than 0.0000337 BTC. */
+export function btcOrSats(sats: number): string {
+  return sats < 100_000 ? `${Math.round(sats).toLocaleString("en-US")} sats` : btc(sats);
+}
+
 export const compact = (n: number) => n.toLocaleString("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
 export function sinceShort(fromSec: number, nowMs: number): string {
