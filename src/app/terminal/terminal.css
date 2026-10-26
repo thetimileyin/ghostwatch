@@ -229,7 +229,7 @@
 .gw-stage-body .pt { width: 100%; height: 100%; }
 .pt { display: flex; flex-direction: column; min-height: 0; padding: 12px 14px 12px; gap: 10px; }
 .pt--empty { display: grid; place-items: center; color: var(--fg-3); font-family: var(--font-mono); font-size: 11px; }
-.pt-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; }
+.pt-top { display: flex; align-items: flex-end; gap: 12px 28px; flex-wrap: wrap; }
 .pt-now { min-width: 0; }
 .pt-k { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--fg-3); white-space: nowrap; }
 .pt-big { margin-top: 4px; font-family: var(--font-pixel); font-size: 30px; line-height: 1; color: var(--fg); white-space: nowrap; }
@@ -237,14 +237,14 @@
 .pt-chg { margin-top: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); white-space: nowrap; }
 .pt-chg b { font-weight: 500; color: var(--fg); }
 .pt-chg b.pt-down { color: var(--bad); }
-.pt-side { display: flex; align-items: flex-end; gap: 20px; }
 .pt-ath-r { padding-left: 14px; border-left: 1px solid var(--line); }
 .pt-plot { position: relative; flex: 1 1 auto; min-height: 160px; }
 .pt-hit { position: absolute; inset: 0; cursor: crosshair; touch-action: pan-y; }
 .pt-hit:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 .pt-hit svg { display: block; }
 .pt-grid { stroke: var(--line); stroke-width: 1; }
-.pt-ylab, .pt-hlab, .pt-athlab { font-family: var(--font-mono); font-size: 10px; fill: var(--fg-3); paint-order: stroke; stroke: var(--void); stroke-width: 3px; stroke-linejoin: round; }
+.pt-ylab, .pt-hlab, .pt-athlab { font-family: var(--font-mono); font-size: 10px; fill: var(--fg-3); }
+.pt-hlab { paint-order: stroke; stroke: var(--void); stroke-width: 3px; stroke-linejoin: round; }
 .pt-athlab { fill: var(--fg-2); }
 .pt-halving { stroke: var(--fg-4); stroke-width: 1; stroke-dasharray: 2 3; }
 .pt-dot { fill: var(--fg); }
@@ -271,7 +271,6 @@
 @media (max-width: 640px) {
   .pt { padding: 10px; }
   .pt-big { font-size: 26px; }
-  .pt-side { width: 100%; justify-content: space-between; }
 }
 .dc { margin: 12px 0 0; }
 .dc-read { display: flex; align-items: baseline; gap: 8px; min-height: 18px; margin-bottom: 6px; font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-3); }
@@ -368,7 +367,7 @@
 .gl-i.is-on { box-shadow: inset 2px 0 0 var(--accent), inset 22px 0 30px -22px var(--signal-glow); }
 .sc-b--hot i.on { box-shadow: 0 0 6px var(--signal-glow); }
 .sc-b i.on { box-shadow: 0 0 6px var(--glow-ink); }
-.dc-head, .dc-dot--last, .pt-head { filter: drop-shadow(0 0 4px var(--accent)); }
+.dc-head, .dc-dot--last { filter: drop-shadow(0 0 4px var(--accent)); }
 .dc-line { filter: drop-shadow(0 0 3px var(--glow-ink)); }
 .pv-open { box-shadow: 0 0 18px var(--signal-glow); }
 .lg-node { box-shadow: 0 0 6px var(--glow-ink); }

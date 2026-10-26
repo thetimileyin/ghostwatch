@@ -16,7 +16,7 @@ import { DotChart } from "./dot-chart";
 import { FieldGuide } from "./field-guide";
 import { Globe } from "./globe";
 import { NetMap } from "./net-map";
-import { PriceTrends } from "./price-trends";
+import { PriceTrends, RANGES, type Range } from "./price-trends";
 import { ChartLineIcon } from "../icons";
 
 const TYPICAL_VB = 140;
@@ -99,6 +99,7 @@ export function Console() {
   const { pulse } = live;
   const [view, choose] = useViewPreference();
   const [tab, setTab] = useState<Tab>("map");
+  const [priceRange, setPriceRange] = useState<Range>("all");
   const [projection, setProjection] = useState<"flat" | "globe">("flat");
   const [guide, setGuide] = useState(false);
   const now = useNow();
@@ -163,6 +164,15 @@ export function Console() {
                   ))}
                 </div>
               )}
+              {tab === "price" && (
+                <div className="seg" role="radiogroup" aria-label="Time range">
+                  {RANGES.map((x) => (
+                    <button key={x.k} type="button" role="radio" aria-checked={priceRange === x.k} onClick={() => setPriceRange(x.k)}>
+                      {x.label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <span className="gw-tabs-hint">
                 {tab === "map" && !nodes && nodesDown
                   ? "Node locations are unavailable right now: the public source isn't answering. Retrying every minute."
@@ -184,7 +194,7 @@ export function Console() {
               {tab === "map" && projection === "globe" && <Globe nodes={nodes} newTxs={live.newTxs} newBlock={live.newBlock} fastestFee={pulse?.fees?.fastest ?? null} />}
               {tab === "blocks" && <MachineFloor pulse={pulse} newTxs={live.newTxs} newBlock={live.newBlock} now={now} />}
               {tab === "dial" && <Dial pulse={pulse} day={day} now={now} />}
-              {tab === "price" && <PriceTrends live={pulse?.priceUsd ?? null} />}
+              {tab === "price" && <PriceTrends live={pulse?.priceUsd ?? null} range={priceRange} />}
             </div>
             {tab === "map" && (
               <div className="gw-legend" aria-label="Legend">

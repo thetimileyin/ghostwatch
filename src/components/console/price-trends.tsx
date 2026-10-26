@@ -7,9 +7,10 @@ import { useView } from "./view";
 // Terminal "Price" view: Bitcoin's price since July 2010, its all-time high, and each year.
 const DAY_MS = 86400_000;
 const STEP = 6; // dot grid pitch, same grain as the fee chart
+const GUTTER = 46; // right strip for price labels, kept clear of dots and line
 
-type Range = "1y" | "5y" | "all";
-const RANGES: { k: Range; label: string; days: number | null; span: string }[] = [
+export type Range = "1y" | "5y" | "all";
+export const RANGES: { k: Range; label: string; days: number | null; span: string }[] = [
   { k: "1y", label: "1Y", days: 365, span: "Over 1 year" },
   { k: "5y", label: "5Y", days: 5 * 365, span: "Over 5 years" },
   { k: "all", label: "All", days: null, span: "Since 2010" },
@@ -36,6 +37,8 @@ function useSize<T extends HTMLElement>() {
   const [size, setSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
     if (!el) return;
+    const r = el.getBoundingClientRect();
+    setSize({ w: Math.floor(r.width), h: Math.floor(r.height) });
     const ro = new ResizeObserver(([e]) => setSize({ w: Math.floor(e.contentRect.width), h: Math.floor(e.contentRect.height) }));
     ro.observe(el);
     return () => ro.disconnect();
@@ -50,7 +53,7 @@ function ticks(min: number, max: number, log: boolean): number[] {
     for (let e = Math.ceil(Math.log10(min)); e <= Math.floor(Math.log10(max)); e++) out.push(10 ** e);
     return out;
   }
-  const raw = (max - min) / 4;
+  const raw = (max - min) / 6;
   const mag = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((s) => s >= raw) ?? raw;
   const out: number[] = [];
@@ -60,11 +63,10 @@ function ticks(min: number, max: number, log: boolean): number[] {
 
 const tickLabel = (v: number) => (v >= 1000 ? `$${(v / 1000).toLocaleString("en-US")}K` : v >= 1 ? `$${v}` : `$${v}`);
 
-export function PriceTrends({ live }: { live: number | null }) {
+export function PriceTrends({ live, range }: { live: number | null; range: Range }) {
   const view = useView();
   const [hist, setHist] = useState<PriceHistory | null>(null);
   const [failed, setFailed] = useState(false);
-  const [range, setRange] = useState<Range>("all");
   const [hover, setHover] = useState<number | null>(null);
   const [plotRef, { w: W, h: H }] = useSize<HTMLDivElement>();
   const yearsRef = useRef<HTMLOListElement>(null);
@@ -120,6 +122,7 @@ export function PriceTrends({ live }: { live: number | null }) {
   }, [hist, live]);
 
   const r = RANGES.find((x) => x.k === range)!;
+  useEffect(() => setHover(null), [range]);
   const log = range === "all";
 
   const view_ = useMemo(() => {
@@ -142,7 +145,7 @@ export function PriceTrends({ live }: { live: number | null }) {
   const geo = useMemo(() => {
     if (!view_ || W < 40 || ph < 40) return null;
     const { d0, d1, min, max } = view_;
-    const x = (d: number) => ((d - d0) / Math.max(1, d1 - d0)) * W;
+    const x = (d: number) => ((d - d0) / Math.max(1, d1 - d0)) * (W - GUTTER);
     const y = log
       ? (v: number) => pad.t + ph - ((Math.log10(v) - Math.log10(min)) / (Math.log10(max) - Math.log10(min))) * ph
       : (v: number) => pad.t + ph - ((v - min) / (max - min)) * ph;
@@ -153,7 +156,7 @@ export function PriceTrends({ live }: { live: number | null }) {
   const dots = useMemo(() => {
     if (!view_ || !geo) return [];
     const out: { x: number; y: number; o: number }[] = [];
-    const cols = Math.floor(W / STEP);
+    const cols = Math.floor((W - GUTTER) / STEP);
     let k = 0;
     for (let c = 0; c < cols; c++) {
       const cx = c * STEP + STEP / 2;
@@ -229,7 +232,7 @@ export function PriceTrends({ live }: { live: number | null }) {
   return (
     <div className="pt">
       {/* One row: the headline price doubles as the hover readout; the high and the range sit beside it. */}
-      <div className="pt-head">
+      <div className="pt-top">
         <div className="pt-now" aria-live="polite">
           <div className="pt-k">{hover == null ? "Bitcoin now" : fmtDate(view_.days[shown])}</div>
           <div className="pt-big num">{fmtPrice(pv)}</div>
@@ -255,13 +258,6 @@ export function PriceTrends({ live }: { live: number | null }) {
               {fmtDate(series.ath.day)} · {fromHigh >= -0.0005 ? <b>new high</b> : <><b className="pt-down">{pct(fromHigh)}</b> now</>}
             </div>
           </div>
-          <div className="seg" role="radiogroup" aria-label="Time range">
-            {RANGES.map((x) => (
-              <button key={x.k} type="button" role="radio" aria-checked={range === x.k} onClick={() => { setRange(x.k); setHover(null); }}>
-                {x.label}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -284,10 +280,10 @@ export function PriceTrends({ live }: { live: number | null }) {
           {geo && (
             <svg width={W} height={H} aria-hidden="true">
               {log && <text x={4} y={12} className="pt-ylab">{view === "simple" ? "Each line is 10× the one below" : "Log scale"}</text>}
-              {yt.filter((v) => !athIn || Math.abs(geo.y(v) - Math.max(12, geo.y(series.ath.usd) - 8)) > 14 || geo.x(series.ath.day) < W - 200).map((v) => (
+              {yt.map((v) => (
                 <g key={v}>
-                  <line x1={0} x2={W} y1={geo.y(v)} y2={geo.y(v)} className="pt-grid" />
-                  <text x={W - 4} y={geo.y(v) - 4} className="pt-ylab" textAnchor="end">{tickLabel(v)}</text>
+                  <line x1={0} x2={W - GUTTER + 4} y1={geo.y(v)} y2={geo.y(v)} className="pt-grid" />
+                  <text x={W - 2} y={geo.y(v) + 3.5} className="pt-ylab" textAnchor="end">{tickLabel(v)}</text>
                 </g>
               ))}
               {halvings.map((hv) => (
@@ -304,9 +300,9 @@ export function PriceTrends({ live }: { live: number | null }) {
                 <g>
                   <rect x={geo.x(series.ath.day) - 3} y={geo.y(series.ath.usd) - 3} width={6} height={6} className="pt-ath" />
                   <text
-                    x={Math.min(geo.x(series.ath.day), W - 4)}
+                    x={Math.min(geo.x(series.ath.day), W - GUTTER)}
                     y={Math.max(12, geo.y(series.ath.usd) - 8)}
-                    textAnchor={geo.x(series.ath.day) > W - 140 ? "end" : "middle"}
+                    textAnchor={geo.x(series.ath.day) > W - GUTTER - 70 ? "end" : "middle"}
                     className="pt-athlab"
                   >
                     High {fmtPrice(series.ath.usd)}
