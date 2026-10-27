@@ -10,6 +10,7 @@ import { AgeBreakdown } from "@/components/journey-bits";
 import { PageHeader } from "@/components/page-header";
 import { BlockGlyph, WakeFlow } from "@/components/story/visuals";
 import { GhostSearch } from "@/components/tx-search";
+import { WatchButton } from "@/components/watch";
 import { SCRIPT, SCRIPT_TAG } from "@/lib/domain/scripts";
 import { ageCompact, ago, amountWords, dateShort, dateTimeUtc, heightLabel, isoDate, middleTruncate, monthYear, satsToBtcString, spanWords } from "@/lib/domain/format";
 import type { GhostInput } from "@/lib/domain/types";
@@ -113,6 +114,7 @@ async function TxContent({ params }: { params: Params }) {
               </div>
             </div>
           )}
+          {!j.coinbase && <WatchButton kind="tx" id={j.txid} label={`Transaction ${middleTruncate(j.txid, 6)}`} />}
           <p className="jr-lede">
             Bitcoin doesn&apos;t move as balances. It moves as separate coins: a transaction spends whole coins and creates new ones. Follow any coin
             backwards to where it came from, or forwards to where it went next.

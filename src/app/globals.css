@@ -461,3 +461,26 @@ footer.foot a:hover { color: var(--fg); }
 .gs-foot kbd { margin-right: 3px; }
 .gs-foot-note { margin-left: auto; }
 @media (max-width: 560px) { .gs-foot > span:not(.gs-foot-note) { display: none; } .gs-foot-note { margin-left: 0; } .gs-hint-r { display: none; } }
+
+/* Watch a coin: the button on transaction and address pages, and the note when something changes. */
+.wb { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 28px; }
+.wb-btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border: 1px solid var(--line-3); background: none; color: var(--fg); font-family: var(--font-mono); font-size: var(--t-xs); letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: border-color 120ms ease, transform 120ms var(--ease-out); }
+.wb-btn:hover { border-color: var(--fg-2); }
+.wb-btn:active { transform: scale(0.97); }
+.wb-btn:disabled { opacity: 0.5; cursor: default; }
+.wb-btn:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+.wb-btn.is-on { background: var(--fg); color: var(--void); border-color: var(--fg); }
+.wb-btn svg { width: 15px; height: 15px; }
+.wb-note { flex: 1 1 260px; max-width: 520px; font-size: 13px; line-height: 1.5; color: var(--fg-3); }
+
+.wtoast { position: fixed; left: 50%; bottom: 20px; z-index: 60; transform: translateX(-50%); width: min(460px, calc(100vw - 32px)); display: flex; align-items: center; gap: 12px; padding: 12px 10px 12px 14px; border: 1px solid var(--line-3); background: var(--ink-2); color: var(--fg); box-shadow: inset 2px 0 0 var(--accent); animation: wtoast-in 200ms var(--ease-out); }
+@keyframes wtoast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+.wtoast-i { width: 16px; height: 16px; flex: none; color: var(--accent); }
+.wtoast-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; color: inherit; text-decoration: none; }
+.wtoast-body b { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+.wtoast-body span { font-size: 13.5px; color: var(--fg-2); }
+.wtoast-x { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border: 0; background: none; color: var(--fg-3); cursor: pointer; }
+.wtoast-x:hover { color: var(--fg); }
+.wtoast-x svg { width: 15px; height: 15px; }
+.gs-row--news .gs-hint-r { color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .wtoast { animation: none; } }

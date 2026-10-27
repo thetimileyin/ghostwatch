@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { GeistPixelSquare } from "geist/font/pixel";
 import { JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
 import Link from "next/link";
+import { WatchKeeper } from "@/components/watch";
 import { Wordmark } from "@/components/wordmark";
 import "./globals.css";
 
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
   description:
     "Watch Bitcoin move in real time: blocks, big transfers and coins waking up after years, in one live terminal.",
   openGraph: { siteName: "Bitcoin GhostWatch", type: "website" },
+  // Lets feed readers find the RSS feed from any page.
+  alternates: { types: { "application/rss+xml": [{ url: "/feed.xml", title: "GhostWatch: old bitcoin waking up" }] } },
   twitter: { card: "summary_large_image" },
 };
 
@@ -42,12 +45,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <a className="skip" href="#main">Skip to content</a>
         {children}
+        <WatchKeeper />
         <footer className="foot">
           <div className="wrap">
             <span className="inline-flex items-center gap-2"><Wordmark size={18} /> There is no GhostWatch token. Anyone selling one is not us.</span>
             <nav aria-label="Footer" className="flex gap-5">
               <Link href="/about">How it works</Link>
               <Link href="/about#privacy">Privacy</Link>
+              <a href="/feed.xml">RSS</a>
               <a href="https://mempool.space" target="_blank" rel="noopener noreferrer">Verify on mempool.space</a>
             </nav>
           </div>

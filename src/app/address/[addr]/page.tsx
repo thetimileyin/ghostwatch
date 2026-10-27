@@ -7,6 +7,7 @@ import { ArrowRightIcon, CheckIcon, ExternalLinkIcon, InfoIcon, WarningIcon } fr
 import { AgeBreakdown } from "@/components/journey-bits";
 import { PageHeader } from "@/components/page-header";
 import { GhostSearch } from "@/components/tx-search";
+import { WatchButton } from "@/components/watch";
 import { ageCompact, amountWords, dateShort, middleTruncate, monthYear, satsToBtcString, spanWords } from "@/lib/domain/format";
 import { SCRIPT, SCRIPT_TAG } from "@/lib/domain/scripts";
 import { addressType, normalizeAddress, type KeyExposure } from "@/lib/journey/address";
@@ -88,6 +89,7 @@ async function AddressContent({ params }: { params: Params }) {
               </>
             )}
           </h1>
+          <WatchButton kind="address" id={s.address} label={`Address ${middleTruncate(s.address, 6)}`} />
           <p className="jr-lede">
             An address is a label coins can be sent to. It isn&apos;t a person or a wallet: one wallet can use thousands of addresses, and coins at
             one address can belong to anyone who holds its key.

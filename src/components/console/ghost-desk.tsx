@@ -4,7 +4,7 @@ import Link from "next/link";
 import { lockScroll, unlockScroll } from "@/lib/scroll-lock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SleepTrack } from "@/components/event-bits";
-import { ArrowRightIcon, CloseIcon } from "@/components/icons";
+import { ArrowRightIcon, CloseIcon, RssIcon } from "@/components/icons";
 import { dateShort, dateTimeUtc, durationShort, monthYear, satsToBtcString, splitBtc } from "@/lib/domain/format";
 import { AGE_OPTIONS, MIN_OPTIONS, feedQueryString, type FeedQuery } from "@/lib/domain/filters";
 import { ageClause, signalGuide, summary } from "@/lib/domain/signal";
@@ -75,6 +75,11 @@ export function GhostDesk({ mode }: { mode: Mode }) {
                 ? "Coins that sat unspent for five years or more, spent in confirmed blocks since GhostWatch started watching."
                 : "Real awakenings from before GhostWatch went live, found by running the same detector over past blocks."}
             </p>
+            {mode === "feed" && (
+              <a href="/feed.xml" className="gwx-rss" title="Follow new awakenings in any feed reader. No account needed.">
+                <RssIcon aria-hidden /> Follow with RSS
+              </a>
+            )}
           </Panel>
           <Panel title="Filter" className="gwx-filters-side">
             <Filters q={q} setQ={setQ} />

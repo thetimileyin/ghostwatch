@@ -6,9 +6,10 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 
 import { createPortal } from "react-dom";
 import { addressType, normalizeAddress } from "@/lib/journey/address";
 import { isTxid } from "@/lib/journey/journey";
-import { ArrowRightIcon, GhostIcon, SearchIcon } from "./icons";
+import { ArrowRightIcon, BellIcon, GhostIcon, SearchIcon } from "./icons";
+import { useWatchList } from "./watch";
 
-type Row = { key: string; href: string; kind: string; label: string; hint: string; old?: boolean };
+type Row = { key: string; href: string; kind: string; label: string; hint: string; old?: boolean; watch?: boolean; news?: boolean };
 type Suggest = { block: { height: number; time: number; txCount: number } | null; woke: { txid: string; dormantSats: number; maxAgeSeconds: number }[] };
 
 const short = (s: string, k = 6) => (s.length > k * 2 + 1 ? `${s.slice(0, k)}…${s.slice(-k)}` : s);
@@ -47,6 +48,7 @@ export function GhostSearch({ autoFocus, onDone, inDialog }: { autoFocus?: boole
   const [q, setQ] = useState("");
   const [active, setActive] = useState(0);
   const [suggest, setSuggest] = useState<Suggest | null>(null);
+  const watching = useWatchList();
 
   useEffect(() => {
     if (!inDialog) return;
@@ -63,8 +65,22 @@ export function GhostSearch({ autoFocus, onDone, inDialog }: { autoFocus?: boole
   const found = detect(q);
   const rows: { title: string; items: Row[] }[] = useMemo(() => {
     if (found && typeof found !== "string") return [{ title: "Open", items: [found] }];
-    if (q.trim() || !suggest) return [];
+    if (q.trim()) return [];
     const groups: { title: string; items: Row[] }[] = [];
+    if (inDialog && watching.length)
+      groups.push({
+        title: "Watching",
+        items: watching.map((w) => ({
+          key: `x${w.kind}${w.id}`,
+          href: w.kind === "tx" ? `/tx/${w.id}` : `/address/${w.id}`,
+          kind: w.kind === "tx" ? "Transaction" : "Address",
+          label: w.label.replace(/^(Transaction|Address) /, ""),
+          hint: w.news ?? "No change",
+          watch: true,
+          news: Boolean(w.news),
+        })),
+      });
+    if (!suggest) return groups;
     if (suggest.woke.length)
       groups.push({
         title: "Recently woke up",
@@ -76,7 +92,7 @@ export function GhostSearch({ autoFocus, onDone, inDialog }: { autoFocus?: boole
         items: [{ key: "lb", href: `/block/${suggest.block.height}`, kind: "Block", label: suggest.block.height.toLocaleString("en-US"), hint: `${suggest.block.txCount.toLocaleString("en-US")} transactions` }],
       });
     return groups;
-  }, [found, q, suggest]);
+  }, [found, q, suggest, watching, inDialog]);
   const flat = rows.flatMap((g) => g.items);
   const current = flat[Math.min(active, flat.length - 1)];
 
@@ -133,12 +149,12 @@ export function GhostSearch({ autoFocus, onDone, inDialog }: { autoFocus?: boole
                   id={`${listId}-${r.key}`}
                   role="option"
                   aria-selected={current === r}
-                  className={`gs-row${current === r ? " is-active" : ""}${r.old ? " gs-row--old" : ""}`}
+                  className={`gs-row${current === r ? " is-active" : ""}${r.old ? " gs-row--old" : ""}${r.news ? " gs-row--news" : ""}`}
                   onMouseEnter={() => setActive(i)}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => open(r)}
                 >
-                  {r.old ? <GhostIcon aria-hidden className="gs-row-i" /> : <span className="gs-kind">{r.kind}</span>}
+                  {r.old ? <GhostIcon aria-hidden className="gs-row-i" /> : r.news ? <BellIcon aria-hidden className="gs-row-i" /> : <span className="gs-kind">{r.kind}</span>}
                   <span className="gs-label">{r.old ? <><b className="num">{r.kind}</b> {r.label}</> : <code>{r.label}</code>}</span>
                   <span className="gs-hint-r">{r.hint} <ArrowRightIcon aria-hidden /></span>
                 </div>
