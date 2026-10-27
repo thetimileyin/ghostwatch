@@ -109,7 +109,7 @@ async function EventContent({ params }: { params: Params }) {
               <span>{monthYear(e.blockTime)}<em>moved</em></span>
             </div>
           </div>
-          <WatchButton kind="tx" id={e.txid} label={`${btcShort(e.dormantSats)} from ${monthYear(e.oldestCreatedTime)}`} />
+          <WatchButton kind="tx" id={e.txid} label={`${btcShort(e.dormantSats)} from ${monthYear(e.oldestCreatedTime)}`} confirmed />
           <p className="st-scroll">Scroll to follow the coins</p>
         </section>
 

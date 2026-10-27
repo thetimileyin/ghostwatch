@@ -114,7 +114,7 @@ async function TxContent({ params }: { params: Params }) {
               </div>
             </div>
           )}
-          {!j.coinbase && <WatchButton kind="tx" id={j.txid} label={`Transaction ${middleTruncate(j.txid, 6)}`} />}
+          {!j.coinbase && <WatchButton kind="tx" id={j.txid} label={`Transaction ${middleTruncate(j.txid, 6)}`} confirmed={j.confirmed} />}
           <p className="jr-lede">
             Bitcoin doesn&apos;t move as balances. It moves as separate coins: a transaction spends whole coins and creates new ones. Follow any coin
             backwards to where it came from, or forwards to where it went next.

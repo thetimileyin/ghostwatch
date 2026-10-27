@@ -92,11 +92,12 @@ async function check(items: { kind: WatchKind; id: string }[]): Promise<Record<s
 }
 
 /** Watch / Watching toggle for a transaction or address page. */
-export function WatchButton({ kind, id, label }: { kind: WatchKind; id: string; label: string }) {
+export function WatchButton({ kind, id, label, confirmed = false }: { kind: WatchKind; id: string; label: string; /** A confirmed transaction can only have its coins move. */ confirmed?: boolean }) {
   const list = useWatchList();
   const watching = list.some((w) => w.kind === kind && w.id === id);
   const full = !watching && list.length >= MAX;
   const [busy, setBusy] = useState(false);
+  const what = kind === "address" ? "coins arrive or leave" : confirmed ? "its coins move" : "it confirms or its coins move";
 
   useEffect(() => clearNews(kind, id), [kind, id]); // seeing the page counts as having seen the news
 
@@ -121,8 +122,8 @@ export function WatchButton({ kind, id, label }: { kind: WatchKind; id: string; 
         {full
           ? `You're watching ${MAX} already. Remove one to add this.`
           : watching
-            ? `We'll tell you when ${kind === "tx" ? "it confirms or its coins move" : "coins arrive or leave"}, while GhostWatch is open. Saved only in this browser.`
-            : `Get told when ${kind === "tx" ? "it confirms or its coins move" : "coins arrive or leave"}. Saved only in this browser; no account.`}
+            ? `We'll tell you when ${what}, while GhostWatch is open. Saved only in this browser.`
+            : `Get told when ${what}. Saved only in this browser; no account.`}
       </span>
     </div>
   );
