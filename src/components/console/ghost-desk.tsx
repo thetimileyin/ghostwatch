@@ -76,7 +76,7 @@ export function GhostDesk({ mode }: { mode: Mode }) {
                 : "Real awakenings from before GhostWatch went live, found by running the same detector over past blocks."}
             </p>
             {mode === "feed" && (
-              <a href="/feed.xml" className="gwx-rss" title="Follow new awakenings in any feed reader. No account needed.">
+              <a href="/rss" className="gwx-rss" title="Follow new awakenings in any feed reader. No account needed.">
                 <RssIcon aria-hidden /> Follow with RSS
               </a>
             )}

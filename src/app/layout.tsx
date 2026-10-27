@@ -52,7 +52,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <nav aria-label="Footer" className="flex gap-5">
               <Link href="/about">How it works</Link>
               <Link href="/about#privacy">Privacy</Link>
-              <a href="/feed.xml">RSS</a>
+              <Link href="/rss">RSS</Link>
               <a href="https://mempool.space" target="_blank" rel="noopener noreferrer">Verify on mempool.space</a>
             </nav>
           </div>

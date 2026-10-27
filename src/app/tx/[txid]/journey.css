@@ -56,3 +56,5 @@
   .jr-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
   .jr-what { grid-column: 1 / -1; grid-row: 2; }
 }
+
+.rss-url { max-width: 760px; }

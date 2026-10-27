@@ -8,6 +8,7 @@ import { axisPct } from "@/components/event-bits";
 import { ArrowRightIcon, CheckIcon, ExternalLinkIcon, InfoIcon, WarningIcon } from "@/components/icons";
 import { BlockGlyph, SleepField, WakeFlow, halvingsBetween, subsidyAt } from "@/components/story/visuals";
 import { PageHeader } from "@/components/page-header";
+import { WatchButton } from "@/components/watch";
 import { getEvent, getStatus } from "@/lib/db/read";
 import {
   btcShort, dateShort, dateTimeUtc, durationLong, durationShort, heightLabel, isoDate, middleTruncate, monthYear, satsLabel, satsToBtcString,
@@ -108,6 +109,7 @@ async function EventContent({ params }: { params: Params }) {
               <span>{monthYear(e.blockTime)}<em>moved</em></span>
             </div>
           </div>
+          <WatchButton kind="tx" id={e.txid} label={`${btcShort(e.dormantSats)} from ${monthYear(e.oldestCreatedTime)}`} />
           <p className="st-scroll">Scroll to follow the coins</p>
         </section>
 
