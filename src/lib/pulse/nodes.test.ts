@@ -46,3 +46,14 @@ describe("aggregateNodes", () => {
     expect(out.summary?.synced).toBe(4 / 5);
   });
 });
+
+describe("versionsAll", () => {
+  it("keeps every version's share, so a small new release is visible", async () => {
+    const { aggregateNodes } = await import("./nodes");
+    const nodes: Record<string, unknown[]> = {};
+    for (let i = 0; i < 99; i++) nodes[`10.0.0.${i}:8333`] = [70016, "/Satoshi:31.1.0/", 0, 0, 100];
+    nodes["10.0.1.1:8333"] = [70016, "/Satoshi:32.1.0/", 0, 0, 100];
+    const s = aggregateNodes({ timestamp: 1, total_nodes: 100, nodes }).summary!;
+    expect(s.versionsAll?.find((v) => v.label === "Bitcoin Core 32.1")?.share).toBeCloseTo(0.01);
+  });
+});

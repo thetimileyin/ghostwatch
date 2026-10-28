@@ -68,6 +68,8 @@ export interface Pulse {
   ghosts: PulseGhost[];
   /** The last 24 hours of awakenings: the true totals and the most notable (10+ years, 1+ BTC), best first. */
   ghostDay?: { all: number; notable: number; top: PulseGhost[] };
+  /** Newest Bitcoin Core release (from its public GitHub releases). */
+  release?: { version: string; publishedAt: number; notesUrl: string } | null;
   /** Tabs watching GhostWatch right now (anonymous count). Set by the API route. */
   watching?: number;
 }
@@ -112,5 +114,7 @@ export interface NodeSummary {
   tor: number;
   countries: NodeShare[];
   versions: NodeShare[];
+  /** Every version's share (top 60), for following a new release's adoption. */
+  versionsAll?: NodeShare[];
   synced: number;
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { durationShort, monthYear } from "@/lib/domain/format";
+import { dateShort, durationShort, monthYear, spanWords } from "@/lib/domain/format";
 import { classifyTx, CLASS_COPY } from "@/lib/pulse/interest";
 import { btc, compact, satvb, short, sinceShort, usd, btcOrSats } from "@/lib/pulse/format";
 import type { NodesSnapshot, Pulse, PulseBlock } from "@/lib/pulse/types";
@@ -135,7 +135,7 @@ export function Console() {
           <Vitals pulse={pulse} nodes={nodes} day={day} now={now} />
           <CoinInspector pulse={pulse} now={now} />
           <Miners pulse={pulse} />
-          <Nodes nodes={nodes} down={nodesDown} />
+          <Nodes nodes={nodes} down={nodesDown} release={pulse?.release ?? null} now={now} />
         </aside>
 
         <main className="gw-center" id="main">
@@ -214,7 +214,7 @@ export function Console() {
         </main>
 
         <aside className="gw-col gw-right" aria-label="What's happening">
-          <ChainLog events={live.events} now={now} price={pulse?.priceUsd ?? null} />
+          <ChainLog events={live.events} now={now} price={pulse?.priceUsd ?? null} release={pulse?.release ?? null} />
           <Pulse_ pulse={pulse} day={day} now={now} />
           <LastSeconds delta={delta} />
         </aside>
@@ -351,7 +351,7 @@ function CoinInspector({ pulse, now }: { pulse: Pulse | null; now: number }) {
  * The reachable network in counts: where nodes are and what they run. Never individual
  * nodes: GhostWatch shows places, not people.
  */
-function Nodes({ nodes, down }: { nodes: NodesSnapshot | null; down: boolean }) {
+function Nodes({ nodes, down, release, now }: { nodes: NodesSnapshot | null; down: boolean; release: Pulse["release"]; now: number }) {
   const sum = nodes?.summary;
   const pct = (n: number) => `${Math.round(n * 100)}%`;
   const bars = (list: { label: string; share: number }[]) =>
@@ -379,6 +379,7 @@ function Nodes({ nodes, down }: { nodes: NodesSnapshot | null; down: boolean }) 
           <Row label="Over Tor" sub="no location, not on the map" value={compact(sum.tor)} />
           <p className="nd-k">Software</p>
           {bars(sum.versions)}
+          {release && <NewestRelease release={release} versions={sum.versionsAll} now={now} />}
           {sum.countries.length > 0 && (
             <>
               <p className="nd-k">Countries</p>
@@ -389,6 +390,27 @@ function Nodes({ nodes, down }: { nodes: NodesSnapshot | null; down: boolean }) 
         </>
       )}
     </Panel>
+  );
+}
+
+/**
+ * The newest Bitcoin Core release and how many reachable nodes run it so far. Reported, not
+ * recommended: GhostWatch shows what the network runs and leaves the choice to node runners.
+ */
+function NewestRelease({ release, versions, now }: { release: NonNullable<Pulse["release"]>; versions: { label: string; share: number }[] | undefined; now: number }) {
+  const share = versions ? (versions.find((v) => v.label === `Bitcoin Core ${release.version}`)?.share ?? 0) : null;
+  const age = now / 1000 - release.publishedAt;
+  const when = age < 2 * 86400 ? `out ${spanWords(release.publishedAt, now / 1000)} ago` : `out since ${dateShort(release.publishedAt)}`;
+  const value = share == null ? "—" : share === 0 ? "0%" : share < 0.001 ? "<0.1%" : `${(share * 100).toFixed(share < 0.1 ? 1 : 0)}%`;
+  return (
+    <a className="rw nd-rel" href={release.notesUrl} target="_blank" rel="noopener noreferrer" title="Release notes on bitcoincore.org">
+      <span className="rw-dot rw-dot--c" aria-hidden="true" />
+      <span className="rw-l">
+        Newest: Core {release.version}
+        <em>{when} · {share == null ? "count in the next node snapshot" : "of reachable nodes so far"}</em>
+      </span>
+      <span className="rw-v num">{value}</span>
+    </a>
   );
 }
 
@@ -463,11 +485,24 @@ const KIND: Record<string, { label: string; cls: string }> = {
 };
 
 /** Alert feed of notable events. Waking coins are the one orange row. */
-export function ChainLog({ events, now, price, limit = 30 }: { events: LiveEvent[]; now: number; price: number | null; limit?: number }) {
+export function ChainLog({ events, now, price, limit = 30, release = null }: { events: LiveEvent[]; now: number; price: number | null; limit?: number; release?: Pulse["release"] }) {
   const view = useView();
   return (
     <Panel title="Chain log" meta={`${events.length} events`} className="gw-stream">
         <ol className="ss">
+          {/* A new Bitcoin Core release stays pinned at the top for three days. */}
+          {release && now / 1000 - release.publishedAt < 3 * 86400 && (
+            <li className="ss-i k-release ss-pin">
+              <a href={release.notesUrl} target="_blank" rel="noopener noreferrer">
+                <span className="ss-time num">{sinceShort(release.publishedAt, now)}</span>
+                <span className="ss-body">
+                  <b>Bitcoin Core {release.version} released</b>
+                  <span className="ss-sub">Release notes on bitcoincore.org</span>
+                </span>
+                <span className="ss-kind k-release">Release</span>
+              </a>
+            </li>
+          )}
           {events.slice(0, limit).map((e) => {
             const kind = e.kind === "tx" ? KIND[e.cls] : KIND[e.kind];
             let text = "", sub = "", href = "", external = true;

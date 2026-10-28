@@ -3,6 +3,7 @@ import { ghostDay, listEvents } from "@/lib/db/read";
 import type { GhostEvent } from "@/lib/domain/types";
 import { aggregateNodes, type RawSnapshot } from "./nodes";
 import { nodeAreas } from "@/lib/geo/areas";
+import { getCoreRelease } from "./releases";
 import type { NodesSnapshot, Pulse, PulseBlock, PulseNetwork, PulseTx } from "./types";
 
 const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
@@ -126,6 +127,7 @@ async function build(): Promise<Pulse> {
     txs: [...buf.values()].sort((a, b) => b.seenAt - a.seenAt),
     ghosts,
     ghostDay: ghostDayData,
+    release: await getCoreRelease().catch(() => null),
   };
 }
 

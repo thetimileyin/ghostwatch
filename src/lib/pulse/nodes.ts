@@ -89,6 +89,8 @@ export function aggregateNodes(raw: RawSnapshot): NodesSnapshot {
     tor,
     countries: points.length ? shares(countries, located, 6) : [],
     versions: shares(versions, total || 1, 5),
+    // Every version (no "Other"), so a brand-new release can be shown while it's still small.
+    versionsAll: [...versions.entries()].sort((a, b) => b[1] - a[1]).slice(0, 60).map(([label, n]) => ({ label, share: n / (total || 1) })),
     synced: total ? synced / total : 0,
   };
   return { timestamp: raw.timestamp, totalNodes: raw.total_nodes || total, points, places, summary };
