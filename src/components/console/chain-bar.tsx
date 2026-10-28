@@ -141,7 +141,8 @@ export function ChainBar({
   const since = tip ? Math.max(0, nowMs / 1000 - tip.time) : null;
   const change = pulse?.priceUsd && pulse.network.price24hAgo ? (pulse.priceUsd - pulse.network.price24hAgo) / pulse.network.price24hAgo : null;
   const w = chainWeather(pulse, nowMs);
-  const woke = (pulse?.ghosts ?? []).filter((g) => nowMs / 1000 - g.blockTime < 86400).length;
+  // Notable awakenings (10+ years, 1+ BTC) in the last 24 hours; the feed opens on the same view.
+  const woke = pulse?.ghostDay?.notable ?? (pulse?.ghosts ?? []).filter((g) => nowMs / 1000 - g.blockTime < 86400).length;
   const bar = useOneLine();
   const utc = new Date(nowMs).toISOString().slice(11, 19);
   return (
@@ -198,7 +199,7 @@ export function ChainBar({
             <span className="cb-guide-l">Field guide</span>
           </button>
         )}
-        <Link href="/feed" className={`cb-alert${woke ? " is-on" : ""}`} title="Coins unspent for 5+ years that moved in the last 24 hours" aria-label={`Old coins moved in the last 24 hours: ${woke}`}>
+        <Link href="/feed" className={`cb-alert${woke ? " is-on" : ""}`} title="Notable old coins (unspent 10+ years, 1+ BTC) that moved in the last 24 hours" aria-label={`Notable old coins moved in the last 24 hours: ${woke}`}>
           <GhostIcon className="cb-alert-i" aria-hidden />
           <span className="cb-alert-l">Old coins ·</span> <b className="num">{woke}</b>
         </Link>

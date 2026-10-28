@@ -24,7 +24,8 @@ export function LandingLive() {
       .catch(() => {});
   }, []);
   const p = live.pulse;
-  const ghost = p?.ghosts[0];
+  // The most notable awakening of the last day if there is one (10+ years, 1+ BTC), else the latest.
+  const ghost = p?.ghostDay?.top[0] ?? p?.ghosts[0];
   const tip = p?.blocks[0];
   const since = tip ? Math.max(0, now / 1000 - tip.time) : 0;
 

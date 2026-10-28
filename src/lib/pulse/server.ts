@@ -1,5 +1,6 @@
 import { readCache, writeCache } from "@/lib/db/cache";
-import { listEvents } from "@/lib/db/read";
+import { ghostDay, listEvents } from "@/lib/db/read";
+import type { GhostEvent } from "@/lib/domain/types";
 import { aggregateNodes, type RawSnapshot } from "./nodes";
 import { nodeAreas } from "@/lib/geo/areas";
 import type { NodesSnapshot, Pulse, PulseBlock, PulseNetwork, PulseTx } from "./types";
@@ -98,11 +99,15 @@ async function build(): Promise<Pulse> {
   );
 
   let ghosts: Pulse["ghosts"] = [];
+  let ghostDayData: Pulse["ghostDay"];
+  const toGhost = (e: GhostEvent) => ({
+    id: e.id, dormantSats: e.dormantSats, oldestCreatedTime: e.oldestCreatedTime, blockHeight: e.blockHeight,
+    blockTime: e.blockTime, cohort: e.cohort, dormantInputCount: e.dormantInputCount,
+  });
   try {
-    ghosts = (await listEvents("live", { limit: 12, minCohort: 5 })).map((e) => ({
-      id: e.id, dormantSats: e.dormantSats, oldestCreatedTime: e.oldestCreatedTime, blockHeight: e.blockHeight,
-      blockTime: e.blockTime, cohort: e.cohort, dormantInputCount: e.dormantInputCount,
-    }));
+    ghosts = (await listEvents("live", { limit: 12, minCohort: 5 })).map(toGhost);
+    const day = await ghostDay(Math.floor(now / 1000) - 86_400);
+    ghostDayData = { all: day.all, notable: day.notable, top: day.top.map(toGhost) };
   } catch {
     /* detector DB down: the network view still works */
   }
@@ -120,6 +125,7 @@ async function build(): Promise<Pulse> {
     blocks,
     txs: [...buf.values()].sort((a, b) => b.seenAt - a.seenAt),
     ghosts,
+    ghostDay: ghostDayData,
   };
 }
 

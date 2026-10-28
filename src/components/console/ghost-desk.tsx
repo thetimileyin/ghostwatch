@@ -17,6 +17,9 @@ import { Panel, useLanded } from "./console";
 
 type Mode = "feed" | "archive";
 
+const NOTABLE_Q: FeedQuery = { age: 10, min: 1 };
+const ALL_Q: FeedQuery = { age: 5, min: 0 };
+
 /**
  * Ghost feed and archive in the terminal frame: filters and context on the left,
  * the list in the centre, a live preview of the selected event on the right.
@@ -26,7 +29,12 @@ export function GhostDesk({ mode }: { mode: Mode }) {
   const [view, choose] = useViewPreference();
   const now = useNow();
   const landed = useLanded(live.newBlock);
-  const [q, setQ] = useState<FeedQuery>({ age: mode === "archive" ? 10 : 5, min: 0 });
+  // The feed opens on notable awakenings (10+ years, 1+ BTC) so big old coins aren't buried
+  // under hundreds of small five-year-old ones; "All" is one tap away (or ?all=1).
+  const [q, setQ] = useState<FeedQuery>(mode === "archive" ? { age: 10, min: 0 } : NOTABLE_Q);
+  useEffect(() => {
+    if (mode === "feed" && new URLSearchParams(window.location.search).get("all") === "1") setQ(ALL_Q);
+  }, [mode]);
   const [events, setEvents] = useState<GhostEvent[] | null>(null);
   const [stats, setStats] = useState<FeedStats | null>(null);
   const [failed, setFailed] = useState(false);
@@ -72,7 +80,7 @@ export function GhostDesk({ mode }: { mode: Mode }) {
           <Panel title={mode === "feed" ? "Ghost feed" : "Archive"} meta={mode === "feed" ? "live" : "not live"} tone="ghost">
             <p className="gwx-intro">
               {mode === "feed"
-                ? "Coins that sat unspent for five years or more, spent in confirmed blocks since GhostWatch started watching."
+                ? "Coins that sat unspent for five years or more, spent in confirmed blocks since GhostWatch started watching. It opens on the notable ones: 10+ years and 1+ BTC."
                 : "Real awakenings from before GhostWatch went live, found by running the same detector over past blocks."}
             </p>
             {mode === "feed" && (
@@ -101,11 +109,28 @@ export function GhostDesk({ mode }: { mode: Mode }) {
 
         <main className="gw-col gwx-center" id="main">
           <Panel title={mode === "feed" ? "Latest first" : "Largest first"} meta={failed ? "can't load right now" : events ? `${events.length} shown` : "loading"} className="gwx-list">
+            {mode === "feed" && (
+              <div className="gwx-scope" role="group" aria-label="Which awakenings">
+                <div className="gw-tablist">
+                  <button type="button" aria-pressed={q.age === NOTABLE_Q.age && q.min === NOTABLE_Q.min} onClick={() => setQ(NOTABLE_Q)}>Notable</button>
+                  <button type="button" aria-pressed={q.age === ALL_Q.age && q.min === ALL_Q.min} onClick={() => setQ(ALL_Q)}>All</button>
+                </div>
+                <span className="gwx-scope-note">{q.age === NOTABLE_Q.age && q.min === NOTABLE_Q.min ? "Unspent 10+ years and 1+ BTC" : q.age === ALL_Q.age && q.min === ALL_Q.min ? "Every coin unspent 5+ years" : "Custom filter"}</span>
+              </div>
+            )}
             {/* Phones: the filters sit above the list instead of below it. */}
             <div className="gwx-filters-top">
               <Filters q={q} setQ={setQ} compact />
             </div>
-            {events && events.length === 0 && <p className="pn-empty">Nothing matches this filter.</p>}
+            {events && events.length === 0 && (
+              <p className="pn-empty">
+                {mode === "feed" && q.age === NOTABLE_Q.age && q.min === NOTABLE_Q.min ? (
+                  <>Nothing notable yet. <button type="button" className="gwx-linkbtn" onClick={() => setQ(ALL_Q)}>Show all awakenings</button></>
+                ) : (
+                  "Nothing matches this filter."
+                )}
+              </p>
+            )}
             <ol className="gl">
               {(events ?? []).map((e) => {
                 const { head, tail } = splitBtc(e.dormantSats);

@@ -205,6 +205,7 @@
 .pn-more { display: inline-block; margin-top: 8px; font-size: 12.5px; color: var(--fg-2); }
 
 /* Coin inspector */
+.ci-kicker { margin: 0 0 4px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); }
 .ci-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .ci-amt { font-family: var(--font-pixel); font-size: 26px; color: var(--fg); white-space: nowrap; }
 .ci-open { font-family: var(--font-mono); font-size: var(--cap); text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-ink); }
@@ -564,3 +565,14 @@ html:has(dialog[open]) body { overscroll-behavior: none; } /* lock and width kep
   .gl-i { grid-template-columns: 10px minmax(0, 1fr) auto; }
   .gl-what, .gl-when { display: none; }
 }
+
+.ci-all { display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--fg-2); text-decoration: none; border-bottom: 1px solid var(--line-3); padding-bottom: 1px; }
+.ci-all:hover { color: var(--fg); border-color: var(--fg); }
+.ci-all svg { width: 12px; height: 12px; }
+
+/* Ghost feed: Notable / All */
+.gwx-scope { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.gwx-scope .gw-tablist { display: inline-flex; flex: none; width: auto; }
+.gwx-scope .gw-tablist button { flex: none; padding-inline: 14px; }
+.gwx-scope-note { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--fg-3); }
+.gwx-linkbtn { padding: 0; border: 0; background: none; font: inherit; color: var(--fg); text-decoration: underline; text-underline-offset: 0.15em; cursor: pointer; }

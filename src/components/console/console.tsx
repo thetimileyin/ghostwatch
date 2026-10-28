@@ -17,7 +17,7 @@ import { FieldGuide } from "./field-guide";
 import { Globe } from "./globe";
 import { NetMap } from "./net-map";
 import { PriceTrends, RANGES, type Range } from "./price-trends";
-import { ChartLineIcon } from "../icons";
+import { ChartLineIcon, ArrowRightIcon } from "../icons";
 
 const TYPICAL_VB = 140;
 type Tab = "map" | "blocks" | "dial" | "price";
@@ -293,18 +293,23 @@ const AXIS_START = Date.UTC(2009, 0, 3) / 1000;
 /** The selected waking coins, inspected: a sleep line from 2009 to now and the facts. */
 function CoinInspector({ pulse, now }: { pulse: Pulse | null; now: number }) {
   const view = useView();
-  const ghosts = pulse?.ghosts ?? [];
+  // Lead with today's most notable awakening (10+ years, 1+ BTC); with none today, the latest.
+  const day = pulse?.ghostDay;
+  const top = day?.top ?? [];
+  const ghosts = top.length ? top : (pulse?.ghosts ?? []);
   const [sel, setSel] = useState<string | null>(null);
   const g = ghosts.find((x) => x.id === sel) ?? ghosts[0];
-  const today = ghosts.filter((x) => now / 1000 - x.blockTime < 86400).length;
+  const today = day?.all ?? (pulse?.ghosts ?? []).filter((x) => now / 1000 - x.blockTime < 86400).length;
+  const meta = day ? (day.notable ? `${day.notable} notable today` : `${today} today`) : `${today} today`;
   const span = now / 1000 - AXIS_START;
   const pct = (t: number) => Math.max(0, Math.min(100, ((t - AXIS_START) / span) * 100));
   return (
-    <Panel title="Waking coins" meta={`${today} today`} tone="ghost" className="dk dk-coin">
+    <Panel title="Waking coins" meta={meta} tone="ghost" className="dk dk-coin">
       {!g ? (
         <p className="pn-empty">No old coins have moved since the detector started.</p>
       ) : (
         <>
+          <p className="ci-kicker">{top.length ? (g.id === top[0].id ? "Most notable today" : "Notable today") : "Latest"}</p>
           <div className="ci-top">
             <span className="ci-amt num">{btc(g.dormantSats)}</span>
             <Link href={`/e/${g.id}`} className="ci-open">Evidence</Link>
@@ -320,7 +325,7 @@ function CoinInspector({ pulse, now }: { pulse: Pulse | null; now: number }) {
             <div><dt>{view === "simple" ? "Block" : "Height"}</dt><dd>{g.blockHeight.toLocaleString("en-US")}</dd></div>
           </dl>
           {ghosts.length > 1 && (
-            <ol className="ci-list" aria-label="Other recent awakenings">
+            <ol className="ci-list" aria-label={top.length ? "Other notable awakenings today" : "Other recent awakenings"}>
               {ghosts.slice(0, 6).map((x) => (
                 <li key={x.id}>
                   <button type="button" aria-pressed={x.id === g.id} onClick={() => setSel(x.id)}>
@@ -330,6 +335,11 @@ function CoinInspector({ pulse, now }: { pulse: Pulse | null; now: number }) {
                 </li>
               ))}
             </ol>
+          )}
+          {today > 0 && (
+            <Link href="/feed?all=1" className="ci-all">
+              See all {today.toLocaleString("en-US")} from today <ArrowRightIcon aria-hidden />
+            </Link>
           )}
         </>
       )}
@@ -527,7 +537,7 @@ function Pulse_({ pulse, day, now }: { pulse: Pulse | null; day: PulseBlock[]; n
   const fastest = pulse?.fees?.fastest ?? null;
   const notable = (pulse?.txs ?? []).filter((t) => classifyTx(t, fastest) !== "regular").length;
   const hour = day.filter((b) => now / 1000 - b.time <= 3600).length;
-  const ghosts24 = (pulse?.ghosts ?? []).filter((g) => now / 1000 - g.blockTime < 86400).length;
+  const ghosts24 = pulse?.ghostDay?.notable ?? (pulse?.ghosts ?? []).filter((g) => now / 1000 - g.blockTime < 86400).length;
   const count = pulse?.mempool?.count ?? 0;
   const sorted = [...day].sort((a, b) => a.time - b.time);
   const fees = sorted.map((b) => b.medianFee);
@@ -538,7 +548,7 @@ function Pulse_({ pulse, day, now }: { pulse: Pulse | null; day: PulseBlock[]; n
       <Meter label={view === "simple" ? "Fee pressure" : "Fastest fee"} value={fastest ?? 0} max={50} text={fastest != null ? satvb(fastest) : "—"} tone={(fastest ?? 0) >= 20 ? "hot" : undefined} />
       <Meter label={view === "simple" ? "Blocks this hour" : "Blocks / 1h"} value={hour} max={6} text={`${hour} of ~6`} />
       <Meter label={view === "simple" ? "Big moves seen" : "Notable tx"} value={notable} max={20} text={String(notable)} />
-      <Meter label={view === "simple" ? "Old coins moved" : "Ghosts / 24h"} value={ghosts24} max={20} text={String(ghosts24)} tone="hot" />
+      <Meter label={view === "simple" ? "Notable old coins" : "Notable / 24h"} value={ghosts24} max={20} text={String(ghosts24)} tone="hot" />
       <DotChart values={fees} labels={feeLabels} label="Median fee per block over the last 24 hours, sat/vB" axis={["24h ago", "now"]} format={(n) => `${n.toFixed(1)}`} />
       <p className="dk-note">{view === "simple" ? "Typical fee per block, last 24 hours" : "Median fee rate per block (sat/vB), 24h"}</p>
     </Panel>

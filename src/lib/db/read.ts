@@ -2,6 +2,7 @@ import { LIVE_WORKER } from "./constants";
 import type { Cohort, FeedPayload, FeedStats, FeedStatus, GhostEvent, GhostEventDetail } from "@/lib/domain/types";
 import { classify } from "@/lib/domain/freshness";
 import { pool } from "./pool";
+import { NOTABLE_MIN_AGE, NOTABLE_MIN_SATS } from "@/lib/domain/notable";
 
 // Read side, used by the web app. Values come straight from the detector's
 // records; the UI formats them but never recomputes dormancy.
@@ -128,4 +129,19 @@ export async function getFeed(f: FeedFilter = {}): Promise<FeedPayload> {
 export async function eventsInBlock(height: number): Promise<GhostEvent[]> {
   const { rows } = await pool().query("select * from ghost_events where block_height = $1 order by dormant_sats desc limit 50", [height]);
   return rows.map(rowToEvent);
+}
+
+/** The last day of live awakenings: how many, how many notable, and the most notable ones. */
+export async function ghostDay(sinceUnix: number, top = 6): Promise<{ all: number; notable: number; top: GhostEvent[] }> {
+  const counts = await pool().query(
+    `select count(*)::int as all, count(*) filter (where dormant_sats >= $2 and max_age_seconds >= $3)::int as notable
+     from ghost_events where origin = 'live' and status <> 'reversed' and block_time >= $1`,
+    [sinceUnix, NOTABLE_MIN_SATS, NOTABLE_MIN_AGE],
+  );
+  const best = await pool().query(
+    `select * from ghost_events where origin = 'live' and status <> 'reversed' and block_time >= $1 and dormant_sats >= $2 and max_age_seconds >= $3
+     order by max_age_seconds desc, dormant_sats desc limit $4`, // oldest first, then largest (see compareNotable)
+    [sinceUnix, NOTABLE_MIN_SATS, NOTABLE_MIN_AGE, top],
+  );
+  return { all: counts.rows[0]?.all ?? 0, notable: counts.rows[0]?.notable ?? 0, top: best.rows.map(rowToEvent) };
 }

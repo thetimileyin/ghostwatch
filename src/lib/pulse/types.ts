@@ -66,6 +66,8 @@ export interface Pulse {
   /** Rolling sample of recently broadcast transactions, newest first. */
   txs: PulseTx[];
   ghosts: PulseGhost[];
+  /** The last 24 hours of awakenings: the true totals and the most notable (10+ years, 1+ BTC), best first. */
+  ghostDay?: { all: number; notable: number; top: PulseGhost[] };
   /** Tabs watching GhostWatch right now (anonymous count). Set by the API route. */
   watching?: number;
 }
