@@ -1,7 +1,7 @@
 /**
  * Outside data sources, with fallbacks. mempool.space is used when it answers, but nothing
  * depends on it alone: it rate-limits busy callers (it blocked this server for days), so
- *  - any connection failure marks it down for 10 minutes (no waiting on timeouts per request);
+ *  - a 429 or three failures in a row set it aside for 10 minutes (no waiting on timeouts);
  *  - Esplora-format calls fall back to Blockstream's public API (same format);
  *  - mempool-only extras (pools, Lightning, projections) simply come back null.
  * All calls run on our server; visitors' browsers never contact these services.
@@ -10,13 +10,24 @@
 export const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
 export const BLOCKSTREAM = (process.env.ESPLORA_FALLBACK_API ?? "https://blockstream.info/api").replace(/\/$/, "");
 
+// mempool.space is set aside for 10 minutes (it was blocking us); anything else only for a
+// minute, so a fallback is never lost for long. One slow or failed request (a big address,
+// a hiccup) doesn't count: it takes a 429 or three failures in a row.
 const DOWN_MS = 10 * 60_000;
-const state = globalThis as unknown as { gwSourceDown?: Record<string, number> };
+const FALLBACK_DOWN_MS = 60_000;
+const STRIKES = 3;
+const state = globalThis as unknown as { gwSourceDown?: Record<string, number>; gwSourceStrikes?: Record<string, number> };
 const down = (state.gwSourceDown ??= {});
+const strikes = (state.gwSourceStrikes ??= {});
 
 const isDown = (base: string) => (down[base] ?? 0) > Date.now();
 const markDown = (base: string) => {
-  down[base] = Date.now() + DOWN_MS;
+  down[base] = Date.now() + (base === MEMPOOL ? DOWN_MS : FALLBACK_DOWN_MS);
+  strikes[base] = 0;
+};
+const strike = (base: string) => {
+  strikes[base] = (strikes[base] ?? 0) + 1;
+  if (strikes[base] >= STRIKES) markDown(base);
 };
 
 /** Is mempool.space currently usable (not marked down)? */
@@ -28,14 +39,19 @@ async function call<T>(base: string, path: string, timeoutMs: number, as: "json"
   if (isDown(base)) return { ok: false, status: null };
   try {
     const res = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store", headers: { accept: as === "json" ? "application/json" : "text/plain", "user-agent": "GhostWatch" } });
-    if (res.status === 429 || res.status >= 500) {
-      markDown(base); // rate limited or broken: give it a rest
+    if (res.status === 429) {
+      markDown(base); // rate limited: give it a rest
       return { ok: false, status: res.status };
     }
+    if (res.status >= 500) {
+      strike(base);
+      return { ok: false, status: res.status };
+    }
+    strikes[base] = 0;
     if (!res.ok) return { ok: false, status: res.status }; // e.g. 400/404: a real answer about this input
     return { ok: true, data: (as === "json" ? await res.json() : await res.text()) as T };
   } catch {
-    markDown(base); // no connection / timeout
+    strike(base); // no connection / timeout
     return { ok: false, status: null };
   }
 }
