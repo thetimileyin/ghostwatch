@@ -1,0 +1,69 @@
+/**
+ * Outside data sources, with fallbacks. mempool.space is used when it answers, but nothing
+ * depends on it alone: it rate-limits busy callers (it blocked this server for days), so
+ *  - any connection failure marks it down for 10 minutes (no waiting on timeouts per request);
+ *  - Esplora-format calls fall back to Blockstream's public API (same format);
+ *  - mempool-only extras (pools, Lightning, projections) simply come back null.
+ * All calls run on our server; visitors' browsers never contact these services.
+ */
+
+export const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
+export const BLOCKSTREAM = (process.env.ESPLORA_FALLBACK_API ?? "https://blockstream.info/api").replace(/\/$/, "");
+
+const DOWN_MS = 10 * 60_000;
+const state = globalThis as unknown as { gwSourceDown?: Record<string, number> };
+const down = (state.gwSourceDown ??= {});
+
+const isDown = (base: string) => (down[base] ?? 0) > Date.now();
+const markDown = (base: string) => {
+  down[base] = Date.now() + DOWN_MS;
+};
+
+/** Is mempool.space currently usable (not marked down)? */
+export const mempoolUp = () => !isDown(MEMPOOL);
+
+export type Fetched<T> = { ok: true; data: T } | { ok: false; status: number | null };
+
+async function call<T>(base: string, path: string, timeoutMs: number, as: "json" | "text"): Promise<Fetched<T>> {
+  if (isDown(base)) return { ok: false, status: null };
+  try {
+    const res = await fetch(`${base}${path}`, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store", headers: { accept: as === "json" ? "application/json" : "text/plain", "user-agent": "GhostWatch" } });
+    if (res.status === 429 || res.status >= 500) {
+      markDown(base); // rate limited or broken: give it a rest
+      return { ok: false, status: res.status };
+    }
+    if (!res.ok) return { ok: false, status: res.status }; // e.g. 400/404: a real answer about this input
+    return { ok: true, data: (as === "json" ? await res.json() : await res.text()) as T };
+  } catch {
+    markDown(base); // no connection / timeout
+    return { ok: false, status: null };
+  }
+}
+
+/** mempool.space-only endpoints (/v1/...): null when it's down or says no. */
+export async function fromMempool<T>(path: string, timeoutMs = 6000): Promise<T | null> {
+  const r = await call<T>(MEMPOOL, path, timeoutMs, "json");
+  return r.ok ? r.data : null;
+}
+
+/**
+ * Esplora-format endpoints (/tx, /address, /block, /mempool...): mempool.space first, then
+ * Blockstream. A 4xx from the first is a real answer (bad input) and is returned as is.
+ */
+export async function fromEsplora<T>(path: string, timeoutMs = 8000, as: "json" | "text" = "json"): Promise<Fetched<T>> {
+  const first = await call<T>(MEMPOOL, path, timeoutMs, as);
+  if (first.ok || (first.status != null && first.status < 500 && first.status !== 429)) return first;
+  return call<T>(BLOCKSTREAM, path, timeoutMs, as);
+}
+
+export async function esploraJson<T>(path: string, timeoutMs = 8000): Promise<T | null> {
+  const r = await fromEsplora<T>(path, timeoutMs);
+  return r.ok ? r.data : null;
+}
+
+/** Any other public JSON API (price sources), with the same down-marking. */
+export async function fromApi<T>(url: string, timeoutMs = 6000): Promise<T | null> {
+  const u = new URL(url);
+  const r = await call<T>(u.origin, `${u.pathname}${u.search}`, timeoutMs, "json");
+  return r.ok ? r.data : null;
+}

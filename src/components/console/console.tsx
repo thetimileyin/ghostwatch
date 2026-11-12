@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { dateShort, durationShort, monthYear, spanWords } from "@/lib/domain/format";
 import { classifyTx, CLASS_COPY } from "@/lib/pulse/interest";
-import { btc, compact, satvb, short, sinceShort, usd, btcOrSats } from "@/lib/pulse/format";
+import { btc, compact, satvb, short, sinceShort, usd, btcOrSats, agoShort } from "@/lib/pulse/format";
 import type { NodesSnapshot, Pulse, PulseBlock } from "@/lib/pulse/types";
 import { usePulse, useNow, type LiveEvent } from "@/lib/pulse/use-pulse";
 import { MachineFloor } from "./blocks-view";
@@ -258,7 +258,7 @@ function Vitals({ pulse, nodes, day, now }: { pulse: Pulse | null; nodes: NodesS
   const feeUsd = pulse?.fees && pulse.priceUsd ? ((pulse.fees.fastest * TYPICAL_VB) / 1e8) * pulse.priceUsd : null;
   const ln = pulse?.network.lightning;
   return (
-    <Panel title="Vitals" meta="live">
+    <Panel title="Vitals" meta={pulse && !pulse.ok ? "unavailable · retrying" : "live"}>
       <Row label={view === "simple" ? "Waiting to confirm" : "Mempool"} sub={view === "simple" ? "transactions" : pulse?.mempool ? `${(pulse.mempool.vsize / 1e6).toFixed(1)} vMB` : ""} value={pulse?.mempool ? compact(pulse.mempool.count) : "—"} />
       <Row label={view === "simple" ? "Cost to get in now" : "Next-block fee"} sub={view === "simple" ? "typical payment" : "sat/vB"} value={view === "simple" ? usd(feeUsd, 2) : pulse?.fees ? pulse.fees.fastest.toFixed(1) : "—"} tone={(pulse?.fees?.fastest ?? 0) >= 20 ? "w" : "c"} />
       <Row label="Blocks today" sub="last 24 hours" value={today || "—"} />
@@ -426,7 +426,7 @@ function PassingThrough({ pulse, now }: { pulse: Pulse | null; now: number }) {
           return (
             <li key={t.txid} className={`tk-i tk-i--${cls}`}>
               <a href={`https://mempool.space/tx/${t.txid}`} target="_blank" rel="noopener noreferrer">
-                <span className="tk-t">{sinceShort(t.seenAt / 1000, now)}</span>
+                <span className="tk-t">{agoShort(t.seenAt / 1000, now)}</span>
                 <span className="tk-a num">{btc(t.value)}</span>
                 <span className="tk-m">{view === "simple" ? (cls === "regular" ? (pulse?.priceUsd ? usd((t.value / 1e8) * pulse.priceUsd) : "") : CLASS_COPY[cls].tag) : `${satvb(t.feeRate)} · ${short(t.txid, 4)}`}</span>
               </a>
@@ -452,7 +452,7 @@ function PriceAndFees({ pulse, onTrends }: { pulse: Pulse | null; onTrends: () =
     { k: "Lightning", v: pulse?.network.lightning ? btc(pulse.network.lightning.capacitySats) : "—", s: pulse?.network.lightning ? `${compact(pulse.network.lightning.nodes)} nodes` : "" },
   ];
   return (
-    <Panel title="Price and fees" meta="live" className="gw-market">
+    <Panel title="Price and fees" meta={pulse && pulse.priceUsd == null && !pulse.fees ? "unavailable · retrying" : "live"} className="gw-market">
       <div className="mk">
         {tiles.map((t) => (
           <div key={t.k} className={`mk-t${t.tone === "hot" ? " mk-t--hot" : ""}`}>

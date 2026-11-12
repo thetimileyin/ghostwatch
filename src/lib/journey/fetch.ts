@@ -1,7 +1,8 @@
 // Shared plumbing for journey lookups: a small cache, a cap on lookups at once, and
 // fetches that fail quietly. Everything runs on our server; nothing is logged.
 
-export const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
+import { MEMPOOL, fromApi, fromEsplora, fromMempool, type Fetched } from "@/lib/sources";
+export { MEMPOOL };
 
 const state = globalThis as unknown as {
   gwLookupCache?: Map<string, { at: number; ttl: number; value: unknown }>;
@@ -36,25 +37,25 @@ export async function cached<T>(key: string, load: () => Promise<T>, ttlFor: (v:
   return value;
 }
 
-/** JSON or null; `status` is set when the source answered with an error. */
-export async function getJson<T>(url: string, timeoutMs = 10_000): Promise<T | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store", headers: { accept: "application/json" } });
-    return res.ok ? ((await res.json()) as T) : null;
-  } catch {
-    return null;
-  }
+/** Turn a mempool.space URL into a call through the fallback layer (see lib/sources.ts). */
+function viaSources<T>(url: string, timeoutMs: number) {
+  const path = url.startsWith(MEMPOOL) ? url.slice(MEMPOOL.length) : null;
+  if (path == null) return null;
+  return path.startsWith("/v1/")
+    ? fromMempool<T>(path, timeoutMs).then((d): Fetched<T> => (d == null ? { ok: false, status: null } : { ok: true, data: d }))
+    : fromEsplora<T>(path, timeoutMs);
 }
 
-/** Like getJson, but tells apart "the source said no" (with its message) from "no answer". */
+/** JSON or null. mempool.space URLs fall back to Blockstream when it's unreachable. */
+export async function getJson<T>(url: string, timeoutMs = 10_000): Promise<T | null> {
+  const r = await (viaSources<T>(url, timeoutMs) ?? fromApi<T>(url, timeoutMs).then((d): Fetched<T> => (d == null ? { ok: false, status: null } : { ok: true, data: d })));
+  return r.ok ? r.data : null;
+}
+
+/** Like getJson, but tells apart "the source said no" (with its status) from "no answer". */
 export async function getJsonOrReason<T>(url: string, timeoutMs = 10_000): Promise<{ ok: true; data: T } | { ok: false; status: number | null; text: string }> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), cache: "no-store", headers: { accept: "application/json" } });
-    if (res.ok) return { ok: true, data: (await res.json()) as T };
-    return { ok: false, status: res.status, text: await res.text().catch(() => "") };
-  } catch {
-    return { ok: false, status: null, text: "" };
-  }
+  const r = await (viaSources<T>(url, timeoutMs) ?? fromApi<T>(url, timeoutMs).then((d): Fetched<T> => (d == null ? { ok: false, status: null } : { ok: true, data: d })));
+  return r.ok ? r : { ok: false, status: r.status, text: "" };
 }
 
 export const chunks = <T,>(list: T[], size: number) => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, i * size + size));

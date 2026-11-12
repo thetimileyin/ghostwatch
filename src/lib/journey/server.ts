@@ -1,6 +1,7 @@
 import { getEvent } from "@/lib/db/read";
 import { eventIdForTxid } from "@/lib/detector/detect";
 import { rpcFromEnv } from "@/lib/detector/rpc";
+import { blockByHeight } from "@/lib/pulse/chain";
 import { MEMPOOL, cached, chunks, getJson } from "./fetch";
 import { buildJourney, isTxid, type Journey, type RawOutspend, type RawTx } from "./journey";
 
@@ -109,7 +110,7 @@ async function load(txid: string): Promise<JourneyResult> {
     const [header, outspends, blockRaw, seen, tip, event] = await Promise.all([
       confirmed ? rpc.call<{ height: number }>("getblockheader", [raw.blockhash]).catch(() => null) : null,
       getJson<RawOutspend[]>(`${MEMPOOL}/tx/${txid}/outspends`),
-      confirmed ? getJson<{ tx_count: number; weight: number; extras?: { pool?: { name?: string }; medianFee?: number } }>(`${MEMPOOL}/v1/block/${raw.blockhash}`) : null,
+      confirmed && raw.blockhash ? rpc.call<{ height: number }>("getblockheader", [raw.blockhash]).then((h) => blockByHeight(h.height)).catch(() => null) : null,
       confirmed ? null : getJson<number[]>(`${MEMPOOL}/v1/transaction-times?txId[]=${txid}`),
       rpc.call<number>("getblockcount").catch(() => null),
       getEvent(eventIdForTxid(txid)).catch(() => null),
@@ -117,12 +118,7 @@ async function load(txid: string): Promise<JourneyResult> {
 
     const journey = buildJourney(raw, times, outspends, header?.height ?? null);
     const block: BlockInfo | null = blockRaw
-      ? {
-          txCount: blockRaw.tx_count,
-          fullness: Math.min(1, blockRaw.weight / 4_000_000),
-          pool: blockRaw.extras?.pool?.name ?? null,
-          medianFee: blockRaw.extras?.medianFee ?? null,
-        }
+      ? { txCount: blockRaw.txCount, fullness: Math.min(1, blockRaw.weight / 4_000_000), pool: blockRaw.pool, medianFee: blockRaw.medianFee || null }
       : null;
     return {
       kind: "ok",

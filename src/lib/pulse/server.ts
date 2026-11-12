@@ -4,13 +4,15 @@ import type { GhostEvent } from "@/lib/domain/types";
 import { aggregateNodes, type RawSnapshot } from "./nodes";
 import { nodeAreas } from "@/lib/geo/areas";
 import { getCoreRelease } from "./releases";
+import { esploraJson, fromApi, fromMempool, mempoolUp } from "@/lib/sources";
+import { rpcFromEnv } from "@/lib/detector/rpc";
+import { WARM_BLOCKS, recentBlocksNow } from "./chain";
 import type { NodesSnapshot, Pulse, PulseBlock, PulseNetwork, PulseTx } from "./types";
 
-const MEMPOOL = (process.env.MEMPOOL_API ?? "https://mempool.space/api").replace(/\/$/, "");
 const NODES_URL = process.env.NODES_API ?? "https://btcnodes.io/api/v1/snapshots/latest/?field=coordinates";
 // Full snapshot (software, height, city per node). Large and slow, so fetched in the background.
 const NODES_FULL_URL = process.env.NODES_FULL_API ?? "https://btcnodes.io/api/v1/snapshots/latest/";
-const PULSE_TTL_MS = 4000;
+const PULSE_TTL_MS = 10_000; // shared by every viewer; each source has its own longer cache
 const NODES_TTL_MS = 60 * 60 * 1000;
 const TX_BUFFER = 160;
 
@@ -47,57 +49,122 @@ async function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Prom
   }
 }
 
-async function network(): Promise<PulseNetwork> {
-  const [past, hr, pools, ln] = await Promise.all([
-    cached("price24h", 10 * 60_000, async () => {
-      const r = await getJson<{ prices: { USD: number }[] }>(`${MEMPOOL}/v1/historical-price?currency=USD&timestamp=${Math.floor(Date.now() / 1000) - 86400}`);
+// Price: Coinbase's public 24h stats first (price and true 24-hour open in one call),
+// then mempool.space, then Kraken.
+async function spotPrice(): Promise<{ usd: number; open24: number | null } | null> {
+  const cb = await fromApi<{ last: string; open: string }>("https://api.exchange.coinbase.com/products/BTC-USD/stats");
+  if (cb && Number(cb.last) > 0) return { usd: Number(cb.last), open24: Number(cb.open) || null };
+  const mp = mempoolUp() ? await fromMempool<{ USD: number }>("/v1/prices") : null;
+  if (mp?.USD) return { usd: mp.USD, open24: null };
+  const kr = await fromApi<{ result?: Record<string, { c: string[] }> }>("https://api.kraken.com/0/public/Ticker?pair=XBTUSD");
+  const k = kr?.result && Object.values(kr.result)[0]?.c?.[0];
+  return k ? { usd: Number(k), open24: null } : null;
+}
+
+type Fees = { fastestFee: number; halfHourFee: number; hourFee: number; economyFee: number; minimumFee: number };
+
+// Fee estimates: mempool.space's recommendation when it answers, else Esplora's estimates.
+async function feeEstimates(): Promise<Fees | null> {
+  if (mempoolUp()) {
+    const f = await fromMempool<Fees>("/v1/fees/recommended");
+    if (f) return f;
+  }
+  const e = await esploraJson<Record<string, number>>("/fee-estimates");
+  if (!e) return null;
+  const r = (x: number | undefined) => Math.max(0.1, Math.round((x ?? 1) * 10) / 10);
+  return { fastestFee: r(e["1"]), halfHourFee: r(e["3"]), hourFee: r(e["6"]), economyFee: r(e["144"]), minimumFee: r(e["1008"] ?? e["144"]) };
+}
+
+type EsploraMempool = { count: number; vsize: number; total_fee: number; fee_histogram?: [number, number][] };
+type Projected = Pulse["projected"];
+
+/**
+ * The next few blocks, estimated from the mempool's fee histogram (highest-paying first,
+ * 1,000,000 vB per block). Used when mempool.space's own projection isn't available.
+ */
+export function projectFromHistogram(m: EsploraMempool | null): Projected {
+  const h = m?.fee_histogram;
+  if (!m || !h?.length) return [];
+  const perVb = m.count && m.vsize ? m.count / m.vsize : 0;
+  const out: Projected = [];
+  let cur = { vsize: 0, fees: 0, max: h[0][0], min: h[0][0], median: h[0][0] };
+  for (const [rate, vsize] of h) {
+    let left = vsize;
+    while (left > 0 && out.length < 6) {
+      const take = Math.min(left, 1_000_000 - cur.vsize);
+      if (cur.vsize < 500_000 && cur.vsize + take >= 500_000) cur.median = rate;
+      cur.vsize += take;
+      cur.fees += take * rate;
+      cur.min = rate;
+      left -= take;
+      if (cur.vsize >= 1_000_000) {
+        out.push({ nTx: Math.round(cur.vsize * perVb), vsize: cur.vsize, medianFee: cur.median, minFee: cur.min, maxFee: cur.max, totalFees: Math.round(cur.fees) });
+        cur = { vsize: 0, fees: 0, max: rate, min: rate, median: rate };
+      }
+    }
+    if (out.length >= 6) break;
+  }
+  if (cur.vsize > 0 && out.length < 6) out.push({ nTx: Math.round(cur.vsize * perVb), vsize: cur.vsize, medianFee: cur.median, minFee: cur.min, maxFee: cur.max, totalFees: Math.round(cur.fees) });
+  return out;
+}
+
+/** Keep the last good value when a source returns nothing (cached() keeps it on throws). */
+const orThrow = <T,>(v: T | null): T => {
+  if (v == null) throw new Error("no data");
+  return v;
+};
+
+async function network(spot: { usd: number; open24: number | null } | null): Promise<PulseNetwork> {
+  const [hr, ln, past] = await Promise.all([
+    cached("hashrate", 10 * 60_000, async () => {
+      const [hps, diff] = await rpcFromEnv().batch<number>([["getnetworkhashps", [144]], ["getdifficulty", []]]);
+      return { eh: hps / 1e18, difficulty: diff };
+    }),
+    cached("lightning", 60 * 60_000, async () => orThrow(mempoolUp() ? await fromMempool<{ latest: { channel_count: number; node_count: number; total_capacity: number; added: string } }>("/v1/lightning/statistics/latest") : null)),
+    spot?.open24 ? Promise.resolve(spot.open24) : cached("price24h", 10 * 60_000, async () => {
+      const r = orThrow(mempoolUp() ? await fromMempool<{ prices: { USD: number }[] }>(`/v1/historical-price?currency=USD&timestamp=${Math.floor(Date.now() / 1000) - 86400}`) : null);
       return r.prices[0]?.USD ?? null;
     }),
-    cached("hashrate", 10 * 60_000, () => getJson<{ currentHashrate: number; currentDifficulty: number }>(`${MEMPOOL}/v1/mining/hashrate/3d`)),
-    cached("pools24h", 10 * 60_000, () => getJson<{ pools: { name: string; blockCount: number }[] }>(`${MEMPOOL}/v1/mining/pools/24h`)),
-    cached("lightning", 60 * 60_000, () => getJson<{ latest: { channel_count: number; node_count: number; total_capacity: number; added: string } }>(`${MEMPOOL}/v1/lightning/statistics/latest`)),
   ]);
-  const total = pools?.pools.reduce((s, p) => s + p.blockCount, 0) ?? 0;
+  // Who's mining: counted from the last day of blocks read from the node (coinbase tags).
+  const day = recentBlocksNow(WARM_BLOCKS).filter((b) => b.time >= Date.now() / 1000 - 86_400);
+  const counts = new Map<string, number>();
+  for (const b of day) if (b.pool) counts.set(b.pool, (counts.get(b.pool) ?? 0) + 1);
+  const total = day.length;
+  const pools24h = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([name, blocks]) => ({ name, blocks, share: total ? blocks / total : 0 }));
   return {
     price24hAgo: past ?? null,
-    hashrateEh: hr ? hr.currentHashrate / 1e18 : null,
-    difficulty: hr?.currentDifficulty ?? null,
-    pools24h: (pools?.pools ?? []).slice(0, 8).map((p) => ({ name: p.name, blocks: p.blockCount, share: total ? p.blockCount / total : 0 })),
+    hashrateEh: hr?.eh ?? null,
+    difficulty: hr?.difficulty ?? null,
+    pools24h: total >= 20 ? pools24h : [], // wait for enough blocks before showing shares
     lightning: ln ? { channels: ln.latest.channel_count, nodes: ln.latest.node_count, capacitySats: ln.latest.total_capacity, asOf: ln.latest.added } : null,
   };
 }
 
 async function build(): Promise<Pulse> {
-  // Warm the 24h block history in the background so the dial has data on first view.
-  if (!(globalThis as unknown as { gwHistory?: Map<number, unknown> }).gwHistory) void getDayOfBlocks().catch(() => {});
-  const settled = await Promise.allSettled([
-    getJson<{ USD: number }>(`${MEMPOOL}/v1/prices`),
-    getJson<{ fastestFee: number; halfHourFee: number; hourFee: number; economyFee: number; minimumFee: number }>(`${MEMPOOL}/v1/fees/recommended`),
-    getJson<{ count: number; vsize: number; total_fee: number }>(`${MEMPOOL}/mempool`),
-    getJson<{ nTx: number; blockVSize: number; medianFee: number; feeRange: number[]; totalFees: number }[]>(`${MEMPOOL}/v1/fees/mempool-blocks`),
-    getJson<RawBlock[]>(`${MEMPOOL}/v1/blocks`),
-    getJson<{ txid: string; fee: number; vsize: number; value: number }[]>(`${MEMPOOL}/mempool/recent`),
+  const [spot, fees, mem, recent] = await Promise.all([
+    cached("spot", 30_000, async () => orThrow(await spotPrice())),
+    cached("fees", 30_000, async () => orThrow(await feeEstimates())),
+    cached("mempool", 20_000, async () => orThrow(await esploraJson<EsploraMempool>("/mempool"))),
+    cached("recent", 10_000, async () => orThrow(await esploraJson<{ txid: string; fee: number; vsize: number; value: number }[]>("/mempool/recent"))),
   ]);
-  const val = <T,>(i: number) => (settled[i].status === "fulfilled" ? (settled[i] as PromiseFulfilledResult<T>).value : null);
+  const proj = await cached("projected", 30_000, async () => {
+    const p = mempoolUp() ? await fromMempool<{ nTx: number; blockVSize: number; medianFee: number; feeRange: number[]; totalFees: number }[]>("/v1/fees/mempool-blocks") : null;
+    if (p?.length)
+      return p.slice(0, 6).map((b) => ({ nTx: b.nTx, vsize: b.blockVSize, medianFee: b.medianFee, minFee: b.feeRange[0] ?? 0, maxFee: b.feeRange[b.feeRange.length - 1] ?? 0, totalFees: b.totalFees }));
+    return orThrow(projectFromHistogram(mem).length ? projectFromHistogram(mem) : null);
+  });
 
   const now = Date.now();
   const buf = (state.gwTxs ??= new Map());
-  for (const t of val<{ txid: string; fee: number; vsize: number; value: number }[]>(5) ?? []) {
+  for (const t of recent ?? []) {
     if (!buf.has(t.txid)) buf.set(t.txid, { txid: t.txid, value: t.value, fee: t.fee, vsize: t.vsize, feeRate: t.vsize ? t.fee / t.vsize : 0, seenAt: now });
   }
   while (buf.size > TX_BUFFER) buf.delete(buf.keys().next().value!);
+  // A sample that's gone stale (source unreachable) isn't "passing through" anymore.
+  const freshTxs = [...buf.values()].filter((t) => now - t.seenAt < 10 * 60_000).sort((a, b) => b.seenAt - a.seenAt);
 
-  const prices = val<{ USD: number }>(0);
-  const fees = val<{ fastestFee: number; halfHourFee: number; hourFee: number; economyFee: number; minimumFee: number }>(1);
-  const mem = val<{ count: number; vsize: number; total_fee: number }>(2);
-  const proj = val<{ nTx: number; blockVSize: number; medianFee: number; feeRange: number[]; totalFees: number }[]>(3) ?? [];
-  const blocks = (val<RawBlock[]>(4) ?? []).map(
-    (b): PulseBlock => ({
-      height: b.height, hash: b.id, time: b.timestamp, txCount: b.tx_count, size: b.size, weight: b.weight,
-      totalFees: b.extras?.totalFees ?? 0, medianFee: b.extras?.medianFee ?? 0, reward: b.extras?.reward ?? 0,
-      pool: b.extras?.pool?.name ?? null, totalOutput: b.extras?.totalOutputAmt ?? null,
-    }),
-  );
+  const blocks = recentBlocksNow(10);
 
   let ghosts: Pulse["ghosts"] = [];
   let ghostDayData: Pulse["ghostDay"];
@@ -115,16 +182,14 @@ async function build(): Promise<Pulse> {
 
   return {
     serverTime: now,
-    ok: settled.slice(0, 6).some((s) => s.status === "fulfilled"),
-    priceUsd: prices?.USD ?? null,
-    network: await network(),
+    ok: Boolean(spot || fees || mem || blocks.length),
+    priceUsd: spot?.usd ?? null,
+    network: await network(spot),
     fees: fees ? { fastest: fees.fastestFee, halfHour: fees.halfHourFee, hour: fees.hourFee, economy: fees.economyFee, minimum: fees.minimumFee } : null,
     mempool: mem ? { count: mem.count, vsize: mem.vsize, totalFee: mem.total_fee } : null,
-    projected: proj.slice(0, 6).map((p) => ({
-      nTx: p.nTx, vsize: p.blockVSize, medianFee: p.medianFee, minFee: p.feeRange[0] ?? 0, maxFee: p.feeRange[p.feeRange.length - 1] ?? 0, totalFees: p.totalFees,
-    })),
+    projected: proj ?? [],
     blocks,
-    txs: [...buf.values()].sort((a, b) => b.seenAt - a.seenAt),
+    txs: freshTxs,
     ghosts,
     ghostDay: ghostDayData,
     release: await getCoreRelease().catch(() => null),
@@ -215,28 +280,6 @@ function refreshFullNodes() {
  * by paging backwards 15 blocks at a time, then topped up from the latest list.
  */
 export async function getDayOfBlocks(): Promise<PulseBlock[]> {
-  const g = globalThis as unknown as { gwHistory?: Map<number, PulseBlock>; gwHistoryAt?: number };
-  const hist = (g.gwHistory ??= new Map());
-  if (g.gwHistoryAt && Date.now() - g.gwHistoryAt < 30_000 && hist.size > 0) return [...hist.values()].sort((a, b) => b.height - a.height);
-  const toBlock = (b: RawBlock): PulseBlock => ({
-    height: b.height, hash: b.id, time: b.timestamp, txCount: b.tx_count, size: b.size, weight: b.weight,
-    totalFees: b.extras?.totalFees ?? 0, medianFee: b.extras?.medianFee ?? 0, reward: b.extras?.reward ?? 0,
-    pool: b.extras?.pool?.name ?? null, totalOutput: b.extras?.totalOutputAmt ?? null,
-  });
-  const latest = await getJson<RawBlock[]>(`${MEMPOOL}/v1/blocks`);
-  latest.forEach((b) => hist.set(b.height, toBlock(b)));
-  const tip = latest[0]?.height ?? 0;
-  const cutoff = Date.now() / 1000 - 26 * 3600;
-  let cursor = Math.min(...hist.keys()) - 1;
-  for (let i = 0; i < 12 && cursor > 0; i++) {
-    const oldest = hist.get(cursor + 1);
-    if (oldest && oldest.time < cutoff) break;
-    if (hist.has(cursor)) { cursor -= 15; continue; }
-    const page = await getJson<RawBlock[]>(`${MEMPOOL}/v1/blocks/${cursor}`);
-    page.forEach((b) => hist.set(b.height, toBlock(b)));
-    cursor = Math.min(...page.map((b) => b.height)) - 1;
-  }
-  for (const h of hist.keys()) if (h < tip - 200) hist.delete(h);
-  g.gwHistoryAt = Date.now();
-  return [...hist.values()].sort((a, b) => b.height - a.height);
+  // From the node (see chain.ts): whatever has been read so far, newest first; the rest loads in the background.
+  return recentBlocksNow(WARM_BLOCKS).filter((b) => b.time >= Date.now() / 1000 - 26 * 3600);
 }
