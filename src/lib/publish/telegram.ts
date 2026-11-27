@@ -1,11 +1,9 @@
-import { pool } from "@/lib/db/pool";
 import { dateShort, heightLabel, monthYear } from "@/lib/domain/format";
 import { headline } from "@/lib/domain/signal";
 import type { GhostEvent } from "@/lib/domain/types";
-import { rowToEvent } from "@/lib/db/read";
+import { deliverPending } from "./queue";
 
 export const TELEGRAM = "telegram";
-const MAX_ATTEMPTS = 5;
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -48,47 +46,13 @@ async function send(token: string, chatId: string, text: string, replyTo?: strin
   return String(body.result!.message_id);
 }
 
-/**
- * Deliver pending Telegram notifications. Each row is marked 'sending' before
- * the API call, so a restart never re-posts something that may have gone out;
- * explicit API failures stay retryable until MAX_ATTEMPTS.
- */
+/** Deliver pending Telegram notifications (corrections reply to the original message). */
 export async function publishPending(log: (m: string) => void = () => {}): Promise<number> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHANNEL_ID;
   if (!token || !chatId) return 0;
-
-  const { rows } = await pool().query(
-    `select n.kind, n.attempts, e.*,
-       (select external_message_id from notifications s where s.event_id = e.id and s.channel = n.channel and s.kind = 'new') as original_message_id
-     from notifications n join ghost_events e on e.id = n.event_id
-     where n.channel = $1 and n.status in ('pending', 'failed') and n.attempts < $2
-     order by e.block_height, e.id limit 20`,
-    [TELEGRAM, MAX_ATTEMPTS],
-  );
-  let sent = 0;
-  for (const r of rows) {
-    const e = rowToEvent(r);
-    // Don't announce something that was reversed before we got to it.
-    if (r.kind === "new" && e.status !== "confirmed") {
-      await pool().query("update notifications set status = 'cancelled', updated_at = now() where event_id = $1 and channel = $2 and kind = 'new'", [e.id, TELEGRAM]);
-      continue;
-    }
-    await pool().query("update notifications set status = 'sending', attempts = attempts + 1, updated_at = now() where event_id = $1 and channel = $2 and kind = $3", [e.id, TELEGRAM, r.kind]);
-    try {
-      const text = r.kind === "new" ? newEventMessage(e) : correctionMessage(e);
-      const id = await send(token, chatId, text, r.kind === "correction" ? r.original_message_id ?? undefined : undefined);
-      await pool().query(
-        "update notifications set status = 'sent', external_message_id = $4, last_error = null, updated_at = now() where event_id = $1 and channel = $2 and kind = $3",
-        [e.id, TELEGRAM, r.kind, id],
-      );
-      sent += 1;
-      log(`telegram: sent ${r.kind} for ${e.id}`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      await pool().query("update notifications set status = 'failed', last_error = $4, updated_at = now() where event_id = $1 and channel = $2 and kind = $3", [e.id, TELEGRAM, r.kind, msg.slice(0, 300)]);
-      log(`telegram: failed ${r.kind} for ${e.id}: ${msg}`);
-    }
-  }
-  return sent;
+  return deliverPending(TELEGRAM, {
+    log,
+    send: (d) => send(token, chatId, d.kind === "new" ? newEventMessage(d.event) : correctionMessage(d.event), d.kind === "correction" ? d.originalId ?? undefined : undefined),
+  });
 }

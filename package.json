@@ -12,7 +12,9 @@
     "backfill": "tsx worker/backfill.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "simulate:reorg": "tsx scripts/simulate-reorg.ts"
+    "simulate:reorg": "tsx scripts/simulate-reorg.ts",
+    "nostr:key": "tsx scripts/nostr-key.ts",
+    "posts": "tsx scripts/post-ideas.ts"
   },
   "dependencies": {
     "@mingcute/react": "^3.0.2",
