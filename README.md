@@ -15,7 +15,7 @@ they went next. It also watches every new block for coins waking up after five y
 - **Awakenings**: every block is read for outputs unspent for 5+ years. Each one gets a permanent page, with what the chain proves and what it doesn't.
 - **Live terminal** (`/terminal`): price, fees, the mempool, recent blocks, who's mining and node locations.
 - **Watch a coin**: get told when a transaction confirms or its coins move. Saved only in your browser.
-- **RSS** (`/feed.xml`) for awakenings.
+- **RSS** (`/feed.xml`) for awakenings, and a **Nostr account** that posts the notable ones (10+ years, 1+ BTC).
 
 ## Principles
 
@@ -33,6 +33,8 @@ npm run worker  # follows the chain and detects awakenings
 ```
 
 Settings live in `.env.local` (see `deploy/setup-server.sh` for the full list). Tests: `npm test`.
+
+`npm run posts` prints ready-to-post drafts from the live site's data.
 
 ## Deploy
 
