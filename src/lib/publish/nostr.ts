@@ -12,8 +12,9 @@ import { eventUrl } from "./telegram";
 
 export const NOSTR = "nostr";
 
-// A note counts as sent when any one accepts it. (damus refuses some datacenter addresses.)
-const DEFAULT_RELAYS = ["wss://nos.lol", "wss://relay.primal.net", "wss://offchain.pub", "wss://relay.snort.social", "wss://relay.damus.io"];
+// A note counts as sent when any one accepts it. relay.damus.io is left out: it refuses the
+// server, and nostr-tools can crash with a stack overflow when that connection fails.
+const DEFAULT_RELAYS = ["wss://nos.lol", "wss://relay.primal.net", "wss://offchain.pub", "wss://relay.snort.social"];
 const SEND_TIMEOUT_MS = 15_000;
 
 export function nostrRelays(): string[] {
