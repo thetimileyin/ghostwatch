@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GhostWatch
 
-## Getting Started
+A live Bitcoin terminal that explains what's happening on-chain in plain words.
 
-First, run the development server:
+**Live:** https://bitcoinghostwatch.online
+
+Block explorers show tables of hashes and amounts. GhostWatch tells the story instead:
+where a transaction's coins came from, how long they sat, which block took it, and where
+they went next. It also watches every new block for coins waking up after five years or more.
+
+## What it does
+
+- **Transaction journeys** (`/tx/<txid>`): a transaction explained step by step, from the coins it spends to where they went.
+- **Addresses and blocks** (`/address/<addr>`, `/block/<height>`): the same plain-words view.
+- **Awakenings**: every block is read for outputs unspent for 5+ years. Each one gets a permanent page, with what the chain proves and what it doesn't.
+- **Live terminal** (`/terminal`): price, fees, the mempool, recent blocks, who's mining and node locations.
+- **Watch a coin**: get told when a transaction confirms or its coins move. Saved only in your browser.
+- **RSS** (`/feed.xml`) for awakenings.
+
+## Principles
+
+- **No accounts, no tracking, no analytics.** Visitors' browsers never contact third-party APIs; our server fetches public data.
+- **Public Bitcoin data only.** Block data comes from a Bitcoin node over RPC. Other sources have fallbacks, so no single API can take the site down.
+- **Never guess identity.** An awakening is not proof of a sale, a hack, or who owns the coins.
+
+## Run it locally
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run db      # local Postgres (PGlite)
+npm run dev     # website on http://localhost:3000
+npm run worker  # follows the chain and detects awakenings
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Settings live in `.env.local` (see `deploy/setup-server.sh` for the full list). Tests: `npm test`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See [deploy/README.md](deploy/README.md).
 
-## Learn More
+## License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT. See [LICENSE](LICENSE).
